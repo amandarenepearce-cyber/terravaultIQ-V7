@@ -6,16 +6,14 @@ from typing import List
 
 import pandas as pd
 import streamlit as st
-import streamlit as st
-import requests 
 from PIL import Image
 
-from modules.discovery import discover_businesses, search_public_topics, expand_topic_queries
-from modules.enrichment import enrich_rows
-from modules.scoring import score_rows
-from modules.ui_theme import inject_brand_theme
-from modules import packager as packager_mod
-from modules import exports as exports_mod
+from discovery import discover_businesses, search_public_topics, expand_topic_queries
+from enrichment import enrich_rows
+from scoring import score_rows
+from ui_theme import inject_brand_theme
+import packager as packager_mod
+import exports as exports_mod
 
 
 # =========================================================
@@ -63,7 +61,7 @@ if not st.user.is_logged_in:
     </div>
     """, unsafe_allow_html=True)
 
-    st.button("Sign in with Google", on_click=st.login, args=["google"], use_container_width=True)
+    st.button("Sign in with Google", on_click=st.login, use_container_width=True)
     st.stop()
 
 user_email = str(st.user.get("email", "")).strip().lower()
