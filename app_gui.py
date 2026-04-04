@@ -36,6 +36,50 @@ st.set_page_config(
 
 inject_brand_theme()
 
+# ---------------------------------------------------------
+# FIX WHITE-ON-WHITE DROPDOWNS / INPUTS
+# ---------------------------------------------------------
+st.markdown(
+    """
+    <style>
+    div[data-baseweb="select"] > div {
+        background-color: #111827 !important;
+        color: #ffffff !important;
+        border: 1px solid #374151 !important;
+    }
+
+    div[data-baseweb="select"] span {
+        color: #ffffff !important;
+    }
+
+    div[role="listbox"] {
+        background-color: #111827 !important;
+        color: #ffffff !important;
+        border: 1px solid #374151 !important;
+    }
+
+    div[role="option"] {
+        background-color: #111827 !important;
+        color: #ffffff !important;
+    }
+
+    div[role="option"]:hover {
+        background-color: #1f2937 !important;
+        color: #ffffff !important;
+    }
+
+    .stTextInput input,
+    .stTextArea textarea,
+    .stNumberInput input {
+        background-color: #111827 !important;
+        color: #ffffff !important;
+        border: 1px solid #374151 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 if "results_df" not in st.session_state:
     st.session_state.results_df = pd.DataFrame()
 
@@ -194,6 +238,170 @@ def hot_lead_count(df: pd.DataFrame) -> int:
     return int((df["needs_leads_tier"].astype(str) == "Hot").sum())
 
 
+def add_display_columns(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df
+
+    work = df.copy()
+
+    # -----------------------------
+    # Best contact name
+    # -----------------------------
+    possible_contact_cols = [
+        "best_contact_name",
+        "contact_name",
+        "primary_contact_name",
+        "owner_name",
+        "decision_maker",
+    ]
+
+    if "best_contact_name" not in work.columns:
+        work["best_contact_name"] = ""
+
+    for col in possible_contact_cols:
+        if col in work.columns:
+            vals = work[col].fillna("").astype(str).str.strip()
+            work["best_contact_name"] = work["best_contact_name"].mask(
+                work["best_contact_name"].eq("") & vals.ne(""),
+                vals
+            )
+
+    # -----------------------------
+    # Pitch summary
+    # -----------------------------
+    opening = (
+        work["pitch_opening_line"].fillna("").astype(str).str.strip()
+        if "pitch_opening_line" in work.columns
+        else pd.Series([""] * len(work), index=work.index)
+    )
+    offer = (
+        work["pitch_offer"].fillna("").astype(str).str.strip()
+        if "pitch_offer" in work.columns
+        else pd.Series([""] * len(work), index=work.index)
+    )
+    cta = (
+        work["pitch_cta"].fillna("").astype(str).str.strip()
+        if "pitch_cta" in work.columns
+        else pd.Series([""] * len(work), index=work.index)
+    )
+
+    work["pitch_summary"] = (opening + " | " + offer + " | " + cta).str.strip(" |")
+
+    # -----------------------------
+    # Ad package recommendation
+    # -----------------------------
+    score_series = (
+        pd.to_numeric(work["needs_leads_score"], errors="coerce")
+        if "needs_leads_score" in work.columns
+        else pd.Series([0] * len(work), index=work.index)
+    )
+    keyword_series = (
+        work["search_keyword"].fillna("").astype(str).str.lower()
+        if "search_keyword" in work.columns
+        else pd.Series([""] * len(work), index=work.index)
+    )
+    mode_series = (
+        work["search_mode"].fillna("").astype(str).str.lower()
+        if "search_mode" in work.columns
+        else pd.Series([""] * len(work), index=work.index)
+    )
+    type_series = (
+        work["business_type"].fillna("").astype(str).str.lower()
+        if "business_type" in work.columns
+        else pd.Series([""] * len(work), index=work.index)
+    )
+    website_series = (
+        work["website"].fillna("").astype(str).str.strip()
+        if "website" in work.columns
+        else pd.Series([""] * len(work), index=work.index)
+    )
+
+    work["_score_num"] = score_series.fillna(0)
+    work["_keyword"] = keyword_series
+    work["_search_mode"] = mode_series
+    work["_business_type"] = type_series
+    work["_website"] = website_series
+
+    def pick_package(row):
+        score = row.get("_score_num", 0)
+        keyword = row.get("_keyword", "")
+        search_mode = row.get("_search_mode", "")
+        business_type = row.get("_business_type", "")
+        website = row.get("_website", "")
+
+        relocation_terms = ["moving", "relocation", "interstate", "out of state", "movers"]
+        event_terms = ["event", "grand opening", "launch", "festival", "sale"]
+        service_terms = ["roofing", "cleaning", "hvac", "plumbing", "contractor", "landscaping", "remodeling"]
+
+        combined_text = f"{keyword} {search_mode} {business_type}".lower()
+
+        if any(term in combined_text for term in relocation_terms):
+            return (
+                "Relocation Capture Package",
+                "$1,500-$3,500 + ad spend",
+                "Best for businesses tied to moving, relocation, or interstate intent where fast lead capture matters.",
+            )
+
+        if any(term in combined_text for term in event_terms):
+            return (
+                "Grand Opening / Event Push",
+                "$1,200-$3,000 + ad spend",
+                "Best for time-sensitive promotions, launches, and event-driven campaigns that need urgency.",
+            )
+
+        if score >= 85:
+            return (
+                "Full Funnel Growth Package",
+                "$3,500-$7,500 + ad spend",
+                "Strong fit for higher-priority leads that can support a bigger search, display, and retargeting strategy.",
+            )
+
+        if score >= 65:
+            return (
+                "Local Visibility Package",
+                "$2,000-$4,500 + ad spend",
+                "Good fit for businesses that need stronger local awareness, better lead flow, and more consistent visibility.",
+            )
+
+        if website == "":
+            return (
+                "Starter Lead Boost",
+                "$750-$1,500 + ad spend",
+                "Good entry package for businesses with low digital presence or missing core lead-capture assets.",
+            )
+
+        if any(term in combined_text for term in service_terms):
+            return (
+                "Local Service Lead Package",
+                "$1,500-$3,000 + ad spend",
+                "A strong option for service businesses that need inbound local calls, form fills, and booked jobs.",
+            )
+
+        return (
+            "Starter Lead Boost",
+            "$750-$1,500 + ad spend",
+            "Solid starter package for testing lead generation and visibility before moving into a larger campaign.",
+        )
+
+    package_data = work.apply(pick_package, axis=1, result_type="expand")
+    package_data.columns = [
+        "ad_package_recommendation",
+        "ad_package_price_range",
+        "ad_package_reason",
+    ]
+
+    work["ad_package_recommendation"] = package_data["ad_package_recommendation"]
+    work["ad_package_price_range"] = package_data["ad_package_price_range"]
+    work["ad_package_reason"] = package_data["ad_package_reason"]
+
+    work = work.drop(
+        columns=["_score_num", "_keyword", "_search_mode", "_business_type", "_website"],
+        errors="ignore",
+    )
+
+    return work
+
+
 def build_summary_text(
     df: pd.DataFrame,
     package_name: str,
@@ -228,8 +436,11 @@ def build_summary_text(
 
 
 def fallback_client_export_df(df: pd.DataFrame) -> pd.DataFrame:
+    df = add_display_columns(df)
+
     preferred = [
         "name",
+        "best_contact_name",
         "business_type",
         "search_keyword",
         "source_zip",
@@ -245,6 +456,10 @@ def fallback_client_export_df(df: pd.DataFrame) -> pd.DataFrame:
         "pitch_opening_line",
         "pitch_offer",
         "pitch_cta",
+        "pitch_summary",
+        "ad_package_recommendation",
+        "ad_package_price_range",
+        "ad_package_reason",
     ]
     cols = [c for c in preferred if c in df.columns]
     remainder = [c for c in df.columns if c not in cols]
@@ -362,13 +577,41 @@ def get_package_zip_bytes(
 def render_results_card(df: pd.DataFrame, title: str = "Lead Results"):
     render_section_header(title, "Review, score, and export client-ready lead packages.")
 
+    df = add_display_columns(df)
+
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Total Results", len(df))
     m2.metric("With Website", safe_metric_count(df, "website"))
     m3.metric("With Email", safe_metric_count(df, "primary_email"))
     m4.metric("Hot Leads", hot_lead_count(df))
 
-    st.dataframe(df, use_container_width=True, hide_index=True, height=520)
+    preferred_cols = [
+        "name",
+        "best_contact_name",
+        "primary_email",
+        "primary_phone",
+        "website",
+        "address",
+        "business_type",
+        "needs_leads_score",
+        "needs_leads_tier",
+        "pitch_summary",
+        "ad_package_recommendation",
+        "ad_package_price_range",
+        "ad_package_reason",
+        "pitch_reason",
+        "pitch_angle",
+    ]
+
+    visible_cols = [c for c in preferred_cols if c in df.columns]
+    remaining_cols = [c for c in df.columns if c not in visible_cols]
+
+    st.dataframe(
+        df[visible_cols + remaining_cols],
+        use_container_width=True,
+        hide_index=True,
+        height=520,
+    )
 
 
 # =========================================================
@@ -449,11 +692,12 @@ with tab1:
         do_enrich = st.checkbox("Find public business contact info", value=True)
         enrich_limit = st.number_input("Max rows to enrich", min_value=0, max_value=5000, value=100, step=25)
         do_score = st.checkbox("Score business leads", value=True)
-        trim_results = st.checkbox("Trim final results", value=True)
-        final_cap = st.selectbox("Final result cap", [100, 250, 500, 1000], index=1)
+        trim_results = st.checkbox("Trim final results", value=False)
+        final_cap = st.selectbox("Final result cap", [100, 250, 500, 1000, 2500, 5000], index=2)
+        show_debug = st.checkbox("Show debug counts", value=True)
 
         public_pages_only = st.checkbox("Public pages only", value=True)
-        max_pages = st.slider("Public search pages", 1, 5, 2)
+        max_pages = st.slider("Public search pages", 1, 10, 4)
 
     if run_search:
         try:
@@ -533,15 +777,31 @@ with tab1:
 
                 progress.empty()
 
+            raw_count = len(all_rows)
+
             if not all_rows:
                 st.warning("No results found.")
+                if search_mode in ["Public Intent Search", "Relocation Interest Finder", "Community Interest Finder"]:
+                    st.info(
+                        "This usually means the issue is inside search_public_topics(...) or the query is too narrow. "
+                        "Try increasing Public search pages, turning off Public pages only, or testing a broader phrase like "
+                        "'moving', 'relocation', or 'interstate movers'."
+                    )
             else:
                 df = pd.DataFrame(all_rows)
+                before_dedupe_count = len(df)
+
                 df = dedupe_dataframe(df)
+                after_dedupe_count = len(df)
+
                 df = sort_by_score_if_present(df)
 
                 if trim_results:
                     df = df.head(int(final_cap)).copy()
+
+                final_count = len(df)
+
+                df = add_display_columns(df)
 
                 st.session_state.results_df = df
                 st.session_state.last_run_meta = {
@@ -555,6 +815,14 @@ with tab1:
                 }
 
                 st.success(f"Found {len(df)} results.")
+
+                if show_debug:
+                    d1, d2, d3, d4 = st.columns(4)
+                    d1.metric("Raw Rows", raw_count)
+                    d2.metric("Before Dedupe", before_dedupe_count)
+                    d3.metric("After Dedupe", after_dedupe_count)
+                    d4.metric("Final Rows", final_count)
+
                 render_results_card(df, title="Lead Results")
 
                 csv_bytes = df.to_csv(index=False).encode("utf-8")
@@ -595,6 +863,7 @@ with tab2:
         st.info("Run a search first in the Campaign Search tab.")
     else:
         df = sort_by_score_if_present(st.session_state.results_df.copy())
+        df = add_display_columns(df)
         meta = st.session_state.last_run_meta or {}
 
         c1, c2, c3 = st.columns(3)
