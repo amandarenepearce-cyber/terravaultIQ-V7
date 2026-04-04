@@ -37,43 +37,107 @@ st.set_page_config(
 inject_brand_theme()
 
 # ---------------------------------------------------------
-# FIX WHITE-ON-WHITE DROPDOWNS / INPUTS
+# FIX DROPDOWNS / INPUTS / BASEWEB POPOVERS
 # ---------------------------------------------------------
 st.markdown(
     """
     <style>
+    /* Closed select field */
     div[data-baseweb="select"] > div {
         background-color: #111827 !important;
         color: #ffffff !important;
         border: 1px solid #374151 !important;
+        border-radius: 10px !important;
     }
 
-    div[data-baseweb="select"] span {
+    /* Text inside closed select */
+    div[data-baseweb="select"] span,
+    div[data-baseweb="select"] div {
         color: #ffffff !important;
     }
 
-    div[role="listbox"] {
+    /* Open dropdown popover */
+    div[data-baseweb="popover"] {
         background-color: #111827 !important;
         color: #ffffff !important;
+    }
+
+    /* Dropdown container */
+    ul[role="listbox"] {
+        background-color: #111827 !important;
         border: 1px solid #374151 !important;
+        border-radius: 10px !important;
+        padding: 4px !important;
     }
 
-    div[role="option"] {
+    /* Dropdown options */
+    li[role="option"] {
         background-color: #111827 !important;
         color: #ffffff !important;
     }
 
-    div[role="option"]:hover {
+    /* Hovered option */
+    li[role="option"]:hover {
         background-color: #1f2937 !important;
         color: #ffffff !important;
     }
 
+    /* Highlighted / selected option */
+    li[aria-selected="true"],
+    li[role="option"][aria-selected="true"] {
+        background-color: #2d6a4f !important;
+        color: #ffffff !important;
+    }
+
+    /* Inputs */
     .stTextInput input,
     .stTextArea textarea,
     .stNumberInput input {
         background-color: #111827 !important;
         color: #ffffff !important;
         border: 1px solid #374151 !important;
+        border-radius: 10px !important;
+    }
+
+    /* Helper cards */
+    .tv-helper-card {
+        background: linear-gradient(180deg, rgba(17,24,39,0.95) 0%, rgba(15,23,42,0.98) 100%);
+        border: 1px solid rgba(55, 65, 81, 0.9);
+        border-radius: 16px;
+        padding: 16px 18px;
+        margin-top: 12px;
+        margin-bottom: 12px;
+    }
+
+    .tv-helper-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #ffffff;
+    }
+
+    .tv-helper-label {
+        color: #93c5fd;
+        font-weight: 600;
+        margin-top: 8px;
+        margin-bottom: 2px;
+    }
+
+    .tv-helper-copy {
+        color: #e5e7eb;
+        line-height: 1.5;
+    }
+
+    .tv-kicker {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(45, 106, 79, 0.18);
+        border: 1px solid rgba(45, 106, 79, 0.65);
+        color: #d1fae5;
+        font-size: 0.82rem;
+        font-weight: 700;
+        margin-bottom: 10px;
     }
     </style>
     """,
@@ -85,6 +149,83 @@ if "results_df" not in st.session_state:
 
 if "last_run_meta" not in st.session_state:
     st.session_state.last_run_meta = {}
+
+
+# =========================================================
+# AD PACK FRONT-END HELPER
+# =========================================================
+AD_PACK_DETAILS = {
+    "SEO": {
+        "best_for": "Long-term visibility and organic search traffic.",
+        "why": "Helps the customer get found when people search for what they offer, without relying only on paid traffic.",
+        "rep_talk_track": "SEO helps you show up more often in search results so customers can find you naturally over time.",
+    },
+    "Google Ads": {
+        "best_for": "Fast leads, calls, and search demand capture.",
+        "why": "Puts the customer in front of people already searching right now, which makes it one of the fastest paths to inbound leads.",
+        "rep_talk_track": "Google Ads gets you in front of people already looking for your service, which means faster opportunities.",
+    },
+    "OTT": {
+        "best_for": "Streaming TV awareness and premium local targeting.",
+        "why": "Builds awareness with targeted streaming placements so the customer stays top-of-mind in the right households.",
+        "rep_talk_track": "OTT helps people see and remember your brand on streaming TV, which is great for awareness and trust.",
+    },
+    "Social Media Ads": {
+        "best_for": "Awareness, engagement, and audience building.",
+        "why": "Gets the customer in front of the right audience where people already spend time every day.",
+        "rep_talk_track": "Social ads help you stay visible, build attention, and get in front of the right people consistently.",
+    },
+    "Retargeting": {
+        "best_for": "Bringing back past visitors who did not convert.",
+        "why": "Keeps the brand in front of warm prospects and helps turn missed traffic into real opportunities.",
+        "rep_talk_track": "Retargeting helps bring back people who already showed interest but did not take action the first time.",
+    },
+    "Local SEO + Google Ads": {
+        "best_for": "Local businesses that need both quick wins and long-term growth.",
+        "why": "Combines immediate lead generation with stronger long-term local visibility in search.",
+        "rep_talk_track": "This gives you short-term traffic now and stronger long-term search visibility in your market.",
+    },
+    "Full Funnel Package": {
+        "best_for": "Customers who need awareness, consideration, and conversion support together.",
+        "why": "Covers the full buyer journey so the customer gets a more complete growth system instead of a one-channel play.",
+        "rep_talk_track": "This package helps attract attention, build trust, and drive action across the full customer journey.",
+    },
+}
+
+
+def recommend_frontend_pack(search_mode: str, keyword: str) -> str:
+    text = f"{search_mode} {keyword}".lower()
+
+    if any(term in text for term in ["moving", "relocation", "interstate", "movers"]):
+        return "Google Ads"
+    if any(term in text for term in ["event", "grand opening", "launch", "festival", "sale"]):
+        return "Social Media Ads"
+    if any(term in text for term in ["roofer", "roofing", "plumber", "plumbing", "hvac", "contractor", "cleaner", "cleaning", "landscaping"]):
+        return "Local SEO + Google Ads"
+    if "community" in text:
+        return "Social Media Ads"
+    if "public intent" in text:
+        return "Google Ads"
+    return "SEO"
+
+
+def render_ad_pack_helper(selected_pack: str):
+    info = AD_PACK_DETAILS[selected_pack]
+    st.markdown(
+        f"""
+        <div class="tv-helper-card">
+            <div class="tv-kicker">Sales Helper</div>
+            <div class="tv-helper-title">{selected_pack}</div>
+            <div class="tv-helper-label">Best for</div>
+            <div class="tv-helper-copy">{info['best_for']}</div>
+            <div class="tv-helper-label">Why this helps the customer</div>
+            <div class="tv-helper-copy">{info['why']}</div>
+            <div class="tv-helper-label">Easy rep talk track</div>
+            <div class="tv-helper-copy">{info['rep_talk_track']}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # =========================================================
@@ -679,6 +820,42 @@ with tab1:
                 ):
                     st.code(phrase, language=None)
 
+        # -----------------------------
+        # Front-end ad pack helper
+        # -----------------------------
+        render_section_header(
+            "Ad Pack Recommendation Helper",
+            "Use this to explain what you should offer and why it helps the customer.",
+        )
+
+        default_pack = recommend_frontend_pack(search_mode, category_or_topic.strip())
+
+        ad_pack_choice = st.selectbox(
+            "What ad pack should you offer?",
+            [
+                "SEO",
+                "Google Ads",
+                "OTT",
+                "Social Media Ads",
+                "Retargeting",
+                "Local SEO + Google Ads",
+                "Full Funnel Package",
+            ],
+            index=[
+                "SEO",
+                "Google Ads",
+                "OTT",
+                "Social Media Ads",
+                "Retargeting",
+                "Local SEO + Google Ads",
+                "Full Funnel Package",
+            ].index(default_pack),
+            help="Pick the package you want the rep to position to the customer.",
+        )
+
+        st.caption(f"Suggested from current search intent: {default_pack}")
+        render_ad_pack_helper(ad_pack_choice)
+
         run_search = st.button("FIND LEADS", use_container_width=True)
 
     with right_col:
@@ -698,6 +875,20 @@ with tab1:
 
         public_pages_only = st.checkbox("Public pages only", value=True)
         max_pages = st.slider("Public search pages", 1, 10, 4)
+
+        st.markdown(
+            """
+            <div class="tv-helper-card">
+                <div class="tv-kicker">Quick closer tip</div>
+                <div class="tv-helper-copy">
+                    If the customer wants fast action, lead with <strong>Google Ads</strong>.<br><br>
+                    If they want long-term visibility, lead with <strong>SEO</strong>.<br><br>
+                    If they need awareness and reach, lead with <strong>OTT</strong> or <strong>Social Media Ads</strong>.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     if run_search:
         try:
@@ -734,6 +925,7 @@ with tab1:
                             row["source_zip"] = z
                             row["area_label"] = area_label.strip()
                             row["run_by"] = user_email
+                            row["front_end_ad_pack_choice"] = ad_pack_choice
 
                         all_rows.extend(rows)
                         progress.progress((idx + 1) / len(zips), text=f"Business search {idx + 1}/{len(zips)}")
@@ -771,6 +963,7 @@ with tab1:
                         row["source_zip"] = z
                         row["area_label"] = area_label.strip()
                         row["run_by"] = user_email
+                        row["front_end_ad_pack_choice"] = ad_pack_choice
 
                     all_rows.extend(rows)
                     progress.progress((idx + 1) / len(target_zips), text=f"Public search {idx + 1}/{len(target_zips)}")
@@ -812,9 +1005,24 @@ with tab1:
                     "radius": radius,
                     "run_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "run_by": user_email,
+                    "ad_pack_choice": ad_pack_choice,
                 }
 
                 st.success(f"Found {len(df)} results.")
+
+                st.markdown(
+                    f"""
+                    <div class="tv-helper-card">
+                        <div class="tv-kicker">Rep positioning</div>
+                        <div class="tv-helper-title">Recommended sales angle: {ad_pack_choice}</div>
+                        <div class="tv-helper-label">Why this helps</div>
+                        <div class="tv-helper-copy">{AD_PACK_DETAILS[ad_pack_choice]['why']}</div>
+                        <div class="tv-helper-label">Talk track</div>
+                        <div class="tv-helper-copy">{AD_PACK_DETAILS[ad_pack_choice]['rep_talk_track']}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
                 if show_debug:
                     d1, d2, d3, d4 = st.columns(4)
@@ -893,6 +1101,21 @@ with tab2:
             row_count=len(package_df),
             meta=meta,
         )
+
+        if meta.get("ad_pack_choice"):
+            st.markdown(
+                f"""
+                <div class="tv-helper-card">
+                    <div class="tv-kicker">Selected offer angle</div>
+                    <div class="tv-helper-title">{meta.get('ad_pack_choice')}</div>
+                    <div class="tv-helper-label">Why this helps the customer</div>
+                    <div class="tv-helper-copy">{AD_PACK_DETAILS.get(meta.get('ad_pack_choice'), {}).get('why', '')}</div>
+                    <div class="tv-helper-label">Easy rep talk track</div>
+                    <div class="tv-helper-copy">{AD_PACK_DETAILS.get(meta.get('ad_pack_choice'), {}).get('rep_talk_track', '')}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
         st.text_area("Package Summary", value=summary_text, height=220)
         render_results_card(package_df, title="Package Preview")
