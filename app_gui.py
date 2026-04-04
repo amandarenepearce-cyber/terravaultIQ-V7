@@ -37,72 +37,121 @@ st.set_page_config(
 inject_brand_theme()
 
 # ---------------------------------------------------------
-# FIX DROPDOWNS / INPUTS / BASEWEB POPOVERS
+# FIX DROPDOWNS / INPUTS / BUTTONS
 # ---------------------------------------------------------
 st.markdown(
     """
     <style>
-    /* Closed select field */
-    div[data-baseweb="select"] > div {
-        background-color: #111827 !important;
+    /* ===== CLOSED SELECT FIELD ===== */
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="select"] > div > div {
+        background: #0f172a !important;
         color: #ffffff !important;
-        border: 1px solid #374151 !important;
+        border: 1px solid #334155 !important;
         border-radius: 10px !important;
     }
 
-    /* Text inside closed select */
     div[data-baseweb="select"] span,
-    div[data-baseweb="select"] div {
+    div[data-baseweb="select"] div,
+    div[data-baseweb="select"] input {
         color: #ffffff !important;
     }
 
-    /* Open dropdown popover */
+    /* ===== OPEN DROPDOWN / PORTAL ===== */
     div[data-baseweb="popover"] {
-        background-color: #111827 !important;
+        background: #0f172a !important;
         color: #ffffff !important;
     }
 
-    /* Dropdown container */
+    div[data-baseweb="menu"] {
+        background: #0f172a !important;
+        color: #ffffff !important;
+        border: 1px solid #334155 !important;
+        border-radius: 10px !important;
+    }
+
     ul[role="listbox"] {
-        background-color: #111827 !important;
-        border: 1px solid #374151 !important;
+        background: #0f172a !important;
+        color: #ffffff !important;
+        border: 1px solid #334155 !important;
         border-radius: 10px !important;
         padding: 4px !important;
     }
 
-    /* Dropdown options */
     li[role="option"] {
-        background-color: #111827 !important;
+        background: #0f172a !important;
         color: #ffffff !important;
     }
 
-    /* Hovered option */
-    li[role="option"]:hover {
-        background-color: #1f2937 !important;
+    li[role="option"] * {
         color: #ffffff !important;
     }
 
-    /* Highlighted / selected option */
-    li[aria-selected="true"],
-    li[role="option"][aria-selected="true"] {
-        background-color: #2d6a4f !important;
+    li[role="option"]:hover,
+    li[role="option"][aria-selected="true"],
+    li[aria-selected="true"] {
+        background: #14532d !important;
         color: #ffffff !important;
     }
 
-    /* Inputs */
+    li[role="option"]:hover *,
+    li[role="option"][aria-selected="true"] *,
+    li[aria-selected="true"] * {
+        color: #ffffff !important;
+    }
+
+    /* ===== INPUTS ===== */
     .stTextInput input,
     .stTextArea textarea,
     .stNumberInput input {
-        background-color: #111827 !important;
+        background: #0f172a !important;
         color: #ffffff !important;
-        border: 1px solid #374151 !important;
+        border: 1px solid #334155 !important;
         border-radius: 10px !important;
     }
 
-    /* Helper cards */
+    .stTextInput input::placeholder,
+    .stTextArea textarea::placeholder,
+    .stNumberInput input::placeholder {
+        color: #cbd5e1 !important;
+        opacity: 1 !important;
+    }
+
+    /* ===== BUTTONS ===== */
+    .stButton > button,
+    .stDownloadButton > button,
+    .stFormSubmitButton > button,
+    button[kind="primary"],
+    button[kind="secondary"] {
+        background: #14532d !important;
+        color: #ffffff !important;
+        border: 1px solid #166534 !important;
+        border-radius: 10px !important;
+        font-weight: 700 !important;
+    }
+
+    .stButton > button:hover,
+    .stDownloadButton > button:hover,
+    .stFormSubmitButton > button:hover,
+    button[kind="primary"]:hover,
+    button[kind="secondary"]:hover {
+        background: #166534 !important;
+        color: #ffffff !important;
+        border: 1px solid #22c55e !important;
+    }
+
+    .stButton > button *,
+    .stDownloadButton > button *,
+    .stFormSubmitButton > button *,
+    button[kind="primary"] *,
+    button[kind="secondary"] * {
+        color: #ffffff !important;
+    }
+
+    /* ===== HELPER CARDS ===== */
     .tv-helper-card {
-        background: linear-gradient(180deg, rgba(17,24,39,0.95) 0%, rgba(15,23,42,0.98) 100%);
-        border: 1px solid rgba(55, 65, 81, 0.9);
+        background: linear-gradient(180deg, rgba(15,23,42,0.96) 0%, rgba(2,6,23,0.98) 100%);
+        border: 1px solid rgba(51, 65, 85, 0.95);
         border-radius: 16px;
         padding: 16px 18px;
         margin-top: 12px;
@@ -117,8 +166,8 @@ st.markdown(
     }
 
     .tv-helper-label {
-        color: #93c5fd;
-        font-weight: 600;
+        color: #86efac;
+        font-weight: 700;
         margin-top: 8px;
         margin-bottom: 2px;
     }
@@ -132,9 +181,9 @@ st.markdown(
         display: inline-block;
         padding: 4px 10px;
         border-radius: 999px;
-        background: rgba(45, 106, 79, 0.18);
-        border: 1px solid rgba(45, 106, 79, 0.65);
-        color: #d1fae5;
+        background: rgba(20, 83, 45, 0.25);
+        border: 1px solid rgba(34, 197, 94, 0.45);
+        color: #dcfce7;
         font-size: 0.82rem;
         font-weight: 700;
         margin-bottom: 10px;
@@ -152,7 +201,7 @@ if "last_run_meta" not in st.session_state:
 
 
 # =========================================================
-# AD PACK FRONT-END HELPER
+# AD PACK HELPER
 # =========================================================
 AD_PACK_DETAILS = {
     "SEO": {
@@ -385,9 +434,6 @@ def add_display_columns(df: pd.DataFrame) -> pd.DataFrame:
 
     work = df.copy()
 
-    # -----------------------------
-    # Best contact name
-    # -----------------------------
     possible_contact_cols = [
         "best_contact_name",
         "contact_name",
@@ -407,9 +453,6 @@ def add_display_columns(df: pd.DataFrame) -> pd.DataFrame:
                 vals
             )
 
-    # -----------------------------
-    # Pitch summary
-    # -----------------------------
     opening = (
         work["pitch_opening_line"].fillna("").astype(str).str.strip()
         if "pitch_opening_line" in work.columns
@@ -428,9 +471,6 @@ def add_display_columns(df: pd.DataFrame) -> pd.DataFrame:
 
     work["pitch_summary"] = (opening + " | " + offer + " | " + cta).str.strip(" |")
 
-    # -----------------------------
-    # Ad package recommendation
-    # -----------------------------
     score_series = (
         pd.to_numeric(work["needs_leads_score"], errors="coerce")
         if "needs_leads_score" in work.columns
@@ -820,41 +860,7 @@ with tab1:
                 ):
                     st.code(phrase, language=None)
 
-        # -----------------------------
-        # Front-end ad pack helper
-        # -----------------------------
-        render_section_header(
-            "Ad Pack Recommendation Helper",
-            "Use this to explain what you should offer and why it helps the customer.",
-        )
-
-        default_pack = recommend_frontend_pack(search_mode, category_or_topic.strip())
-
-        ad_pack_choice = st.selectbox(
-            "What ad pack should you offer?",
-            [
-                "SEO",
-                "Google Ads",
-                "OTT",
-                "Social Media Ads",
-                "Retargeting",
-                "Local SEO + Google Ads",
-                "Full Funnel Package",
-            ],
-            index=[
-                "SEO",
-                "Google Ads",
-                "OTT",
-                "Social Media Ads",
-                "Retargeting",
-                "Local SEO + Google Ads",
-                "Full Funnel Package",
-            ].index(default_pack),
-            help="Pick the package you want the rep to position to the customer.",
-        )
-
-        st.caption(f"Suggested from current search intent: {default_pack}")
-        render_ad_pack_helper(ad_pack_choice)
+        ad_pack_choice = recommend_frontend_pack(search_mode, category_or_topic.strip())
 
         run_search = st.button("FIND LEADS", use_container_width=True)
 
@@ -875,20 +881,6 @@ with tab1:
 
         public_pages_only = st.checkbox("Public pages only", value=True)
         max_pages = st.slider("Public search pages", 1, 10, 4)
-
-        st.markdown(
-            """
-            <div class="tv-helper-card">
-                <div class="tv-kicker">Quick closer tip</div>
-                <div class="tv-helper-copy">
-                    If the customer wants fast action, lead with <strong>Google Ads</strong>.<br><br>
-                    If they want long-term visibility, lead with <strong>SEO</strong>.<br><br>
-                    If they need awareness and reach, lead with <strong>OTT</strong> or <strong>Social Media Ads</strong>.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
 
     if run_search:
         try:
@@ -1010,20 +1002,6 @@ with tab1:
 
                 st.success(f"Found {len(df)} results.")
 
-                st.markdown(
-                    f"""
-                    <div class="tv-helper-card">
-                        <div class="tv-kicker">Rep positioning</div>
-                        <div class="tv-helper-title">Recommended sales angle: {ad_pack_choice}</div>
-                        <div class="tv-helper-label">Why this helps</div>
-                        <div class="tv-helper-copy">{AD_PACK_DETAILS[ad_pack_choice]['why']}</div>
-                        <div class="tv-helper-label">Talk track</div>
-                        <div class="tv-helper-copy">{AD_PACK_DETAILS[ad_pack_choice]['rep_talk_track']}</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
                 if show_debug:
                     d1, d2, d3, d4 = st.columns(4)
                     d1.metric("Raw Rows", raw_count)
@@ -1080,7 +1058,41 @@ with tab2:
         with c2:
             prepared_by = st.text_input("Prepared By", value=user_name or user_email)
         with c3:
-            max_rows = st.number_input("Max Leads in Package", min_value=10, max_value=5000, value=min(250, len(df)), step=10)
+            max_rows = st.number_input(
+                "Max Leads in Package",
+                min_value=10,
+                max_value=5000,
+                value=min(250, len(df)),
+                step=10
+            )
+
+        st.markdown("### What Package Should You Pitch?")
+
+        default_pack = meta.get("ad_pack_choice", "Google Ads")
+        package_options = [
+            "SEO",
+            "Google Ads",
+            "OTT",
+            "Social Media Ads",
+            "Retargeting",
+            "Local SEO + Google Ads",
+            "Full Funnel Package",
+        ]
+
+        if default_pack not in package_options:
+            default_pack = "Google Ads"
+
+        ad_pack_choice = st.selectbox(
+            "What ad pack should you offer?",
+            package_options,
+            index=package_options.index(default_pack),
+            help="Choose the package you want reps to pitch in the client package area.",
+            key="tab2_ad_pack_choice",
+        )
+
+        render_ad_pack_helper(ad_pack_choice)
+        meta["ad_pack_choice"] = ad_pack_choice
+        st.session_state.last_run_meta = meta
 
         package_df = df.head(int(max_rows)).copy()
         client_df = get_client_export_df(package_df)
@@ -1102,21 +1114,6 @@ with tab2:
             meta=meta,
         )
 
-        if meta.get("ad_pack_choice"):
-            st.markdown(
-                f"""
-                <div class="tv-helper-card">
-                    <div class="tv-kicker">Selected offer angle</div>
-                    <div class="tv-helper-title">{meta.get('ad_pack_choice')}</div>
-                    <div class="tv-helper-label">Why this helps the customer</div>
-                    <div class="tv-helper-copy">{AD_PACK_DETAILS.get(meta.get('ad_pack_choice'), {}).get('why', '')}</div>
-                    <div class="tv-helper-label">Easy rep talk track</div>
-                    <div class="tv-helper-copy">{AD_PACK_DETAILS.get(meta.get('ad_pack_choice'), {}).get('rep_talk_track', '')}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
         st.text_area("Package Summary", value=summary_text, height=220)
         render_results_card(package_df, title="Package Preview")
 
@@ -1127,13 +1124,37 @@ with tab2:
 
         d1, d2, d3, d4 = st.columns(4)
         with d1:
-            st.download_button("Client CSV", data=client_csv, file_name=f"{package_name.lower().replace(' ', '_')}_client.csv", mime="text/csv", use_container_width=True)
+            st.download_button(
+                "Client CSV",
+                data=client_csv,
+                file_name=f"{package_name.lower().replace(' ', '_')}_client.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
         with d2:
-            st.download_button("CRM CSV", data=crm_csv, file_name=f"{package_name.lower().replace(' ', '_')}_crm.csv", mime="text/csv", use_container_width=True)
+            st.download_button(
+                "CRM CSV",
+                data=crm_csv,
+                file_name=f"{package_name.lower().replace(' ', '_')}_crm.csv",
+                mime="text/csv",
+                use_container_width=True
+            )
         with d3:
-            st.download_button("Client Excel", data=client_excel, file_name=f"{package_name.lower().replace(' ', '_')}_client.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+            st.download_button(
+                "Client Excel",
+                data=client_excel,
+                file_name=f"{package_name.lower().replace(' ', '_')}_client.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True
+            )
         with d4:
-            st.download_button("Full ZIP Package", data=zip_bytes, file_name=f"{package_name.lower().replace(' ', '_')}_package.zip", mime="application/zip", use_container_width=True)
+            st.download_button(
+                "Full ZIP Package",
+                data=zip_bytes,
+                file_name=f"{package_name.lower().replace(' ', '_')}_package.zip",
+                mime="application/zip",
+                use_container_width=True
+            )
 
 
 # =========================================================
