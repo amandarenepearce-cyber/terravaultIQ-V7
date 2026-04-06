@@ -1,5 +1,6 @@
 import time
 from typing import Dict, List, Tuple
+from urllib.parse import urlparse
 
 import requests
 import streamlit as st
@@ -33,6 +34,34 @@ BUSINESS_PRESETS = {
     "electricians": "electricians",
     "painters": "painters",
     "restaurants": "restaurants",
+}
+
+PUBLIC_TOPIC_PRESETS = {
+    "public intent search": [
+        "{keyword}",
+        "{keyword} near me",
+        "best {keyword} {area}",
+        "{keyword} services {area}",
+        "top rated {keyword} {area}",
+        "affordable {keyword} {area}",
+    ],
+    "relocation finder": [
+        "moving to {area}",
+        "relocation to {area}",
+        "homes for sale {area}",
+        "apartments in {area}",
+        "utilities in {area}",
+        "schools in {area}",
+        "{keyword} {area}",
+    ],
+    "community interest finder": [
+        "{keyword} {area}",
+        "events in {area}",
+        "things to do in {area}",
+        "community groups in {area}",
+        "local organizations in {area}",
+        "volunteer opportunities in {area}",
+    ],
 }
 
 
@@ -115,12 +144,62 @@ def dedupe_rows(rows: List[Dict]) -> List[Dict]:
             str(row.get("name", "")).strip().lower(),
             str(row.get("address", "")).strip().lower(),
             str(row.get("website", "")).strip().lower(),
+            str(row.get("url", "")).strip().lower(),
         )
         if key in seen:
             continue
         seen.add(key)
         out.append(row)
     return out
+
+
+def dedupe_strings(values: List[str]) -> List[str]:
+    seen = set()
+    out = []
+    for value in values:
+        v = str(value or "").strip()
+        if not v:
+            continue
+        k = v.lower()
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(v)
+    return out
+
+
+def split_keyword_phrases(keyword: str) -> List[str]:
+    raw = str(keyword or "").strip()
+    if not raw:
+        return []
+
+    if "," in raw:
+        return dedupe_strings([part.strip() for part in raw.split(",")])
+
+    # If user pasted a long roofing-style phrase blob, split to useful variants
+    lower = raw.lower()
+    known_chunks = [
+        "roof repair",
+        "roofing contractor",
+        "roof replacement",
+        "roofing company",
+        "emergency roof repair",
+        "roofer",
+        "moving company",
+        "local movers",
+        "interstate movers",
+        "relocation services",
+        "community events",
+        "things to do",
+        "local organizations",
+        "volunteer opportunities",
+    ]
+
+    found = [chunk for chunk in known_chunks if chunk in lower]
+    if found:
+        return dedupe_strings(found)
+
+    return [raw]
 
 
 def discover_businesses(zip_code: str, radius: float, mode: str, keyword: str, use_google: bool, use_osm: bool) -> List[Dict]:
@@ -163,20 +242,167 @@ def discover_businesses(zip_code: str, radius: float, mode: str, keyword: str, u
     return dedupe_rows(rows)
 
 
-def search_public_topics(search_mode: str, keyword: str, zip_code: str, area_label: str, max_pages: int, use_google: bool, public_pages_only: bool) -> List[Dict]:
-    return []
+def get_cse_credentials() -> Tuple[str, str]:
+    api_key = st.secrets.get("GOOGLE_CSE_API_KEY", "").strip()
+    cx = st.secrets.get("GOOGLE_CSE_CX", "").strip()
+    return api_key, cx
+
+
+def google_cse_search(api_key: str, cx: str, query: str, start: int = 1, num: int = 10) -> List[Dict]:
+    url = "https://www.googleapis.com/customsearch/v1"
+    params = {
+        "key": api_key,
+        "cx": cx,
+        "q": query,
+        "start": start,
+        "num": min(max(num, 1), 10),
+    }
+    r = requests.get(url, params=params, headers=HEADERS, timeout=30)
+    r.raise_for_status()
+    data = r.json()
+    return data.get("items", [])
+
+
+def is_public_page(url: str) -> bool:
+    lowered = str(url or "").lower()
+    if not lowered.startswith(("http://", "https://")):
+        return False
+
+    blocked_tokens = [
+        "/wp-admin",
+        "/cart",
+        "/checkout",
+        "/my-account",
+        "/account",
+        "/login",
+        "/signin",
+        "/sign-in",
+        "/register",
+        "/portal",
+        "/dashboard",
+        "/privacy",
+        "/terms",
+        "/feed",
+        ".pdf",
+    ]
+    return not any(token in lowered for token in blocked_tokens)
+
+
+def domain_from_url(url: str) -> str:
+    try:
+        return urlparse(url).netloc.lower()
+    except Exception:
+        return ""
+
+
+def score_public_result(title: str, snippet: str, query: str, area_label: str) -> int:
+    score = 0
+    haystack = f"{title} {snippet}".lower()
+    q = str(query or "").lower().strip()
+    area = str(area_label or "").lower().strip()
+
+    for token in q.split():
+        if token and token in haystack:
+            score += 3
+
+    if q and q in haystack:
+        score += 8
+
+    if area and area in haystack:
+        score += 4
+
+    return score
+
+
+def normalize_public_row(item: Dict, phrase: str, search_mode: str, area_label: str) -> Dict:
+    url = item.get("link", "")
+    title = item.get("title", "")
+    snippet = item.get("snippet", "")
+    pagemap = item.get("pagemap", {}) or {}
+    metatags = (pagemap.get("metatags") or [{}])[0] if isinstance(pagemap.get("metatags"), list) else {}
+    site_name = metatags.get("og:site_name", "") if isinstance(metatags, dict) else ""
+
+    return {
+        "name": title or site_name or domain_from_url(url),
+        "business_type": search_mode,
+        "search_keyword": phrase,
+        "search_area": area_label,
+        "address": "",
+        "website": url,
+        "url": url,
+        "phone": "",
+        "rating": "",
+        "ratings_total": "",
+        "google_maps_url": "",
+        "place_id": "",
+        "types": search_mode,
+        "title": title,
+        "snippet": snippet,
+        "domain": domain_from_url(url),
+        "score": score_public_result(title, snippet, phrase, area_label),
+    }
 
 
 def expand_topic_queries(search_mode: str, keyword: str, zip_code: str = "", area_label: str = "") -> List[str]:
-    base = str(keyword or "").strip()
+    mode = str(search_mode or "").strip().lower()
     area = str(area_label or zip_code or "").strip()
+    phrases = split_keyword_phrases(keyword)
 
-    phrases = [
-        f"{base} near me",
-        f"best {base} {area}".strip(),
-        f"{base} services {area}".strip(),
-        f"top rated {base} {area}".strip(),
-        f"affordable {base} {area}".strip(),
-    ]
+    templates = PUBLIC_TOPIC_PRESETS.get(mode, PUBLIC_TOPIC_PRESETS["public intent search"])
+    queries = []
 
-    return [p for p in phrases if p.strip()]
+    for phrase in phrases:
+        for template in templates:
+            queries.append(template.format(keyword=phrase, area=area).strip())
+
+    if not queries:
+        base = str(keyword or "").strip()
+        queries = [
+            f"{base} near me",
+            f"best {base} {area}".strip(),
+            f"{base} services {area}".strip(),
+            f"top rated {base} {area}".strip(),
+            f"affordable {base} {area}".strip(),
+        ]
+
+    return dedupe_strings([q for q in queries if q.strip()])
+
+
+def search_public_topics(
+    search_mode: str,
+    keyword: str,
+    zip_code: str,
+    area_label: str,
+    max_pages: int,
+    use_google: bool,
+    public_pages_only: bool,
+) -> List[Dict]:
+    if not use_google:
+        return []
+
+    api_key, cx = get_cse_credentials()
+    if not api_key or not cx:
+        raise ValueError("Missing GOOGLE_CSE_API_KEY or GOOGLE_CSE_CX in app secrets.")
+
+    area = str(area_label or zip_code or "").strip()
+    queries = expand_topic_queries(search_mode, keyword, zip_code=zip_code, area_label=area)
+
+    # max_pages in UI is treated as search breadth control, not literal Google pagination pages
+    max_queries = max(1, min(int(max_pages or 4), len(queries)))
+    queries_to_run = queries[:max_queries]
+
+    rows = []
+    for query in queries_to_run:
+        items = google_cse_search(api_key, cx, query, start=1, num=10)
+
+        for item in items:
+            row = normalize_public_row(item, query, search_mode, area)
+
+            if public_pages_only and not is_public_page(row.get("url", "")):
+                continue
+
+            rows.append(row)
+
+    rows = dedupe_rows(rows)
+    rows.sort(key=lambda r: (r.get("score", 0), r.get("name", "")), reverse=True)
+    return rows
