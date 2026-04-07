@@ -201,6 +201,21 @@ if "last_run_meta" not in st.session_state:
 
 
 # =========================================================
+# CONSTANTS
+# =========================================================
+BUSINESS_SEARCH_MODES = [
+    "Marketing Prospect Finder",
+    "Custom Business Search",
+]
+
+PUBLIC_SEARCH_MODES = [
+    "Public Intent Search",
+    "Relocation Interest Finder",
+    "Community Interest Finder",
+]
+
+
+# =========================================================
 # AD PACK HELPER
 # =========================================================
 AD_PACK_DETAILS = {
@@ -369,11 +384,20 @@ def default_prompt(search_mode: str):
     defaults = {
         "Marketing Prospect Finder": ("INDUSTRY / CATEGORY", "roofing"),
         "Custom Business Search": ("CATEGORY / KEYWORD", "house cleaners"),
-        "Public Intent Search": ("TOPIC / KEYWORD", "need a roofer"),
-        "Relocation Interest Finder": ("TARGET AREA", "moving to chicago"),
-        "Community Interest Finder": ("COMMUNITY / INTEREST", "small business owners"),
+        "Public Intent Search": ("TOPIC / KEYWORD", "roofing company"),
+        "Relocation Interest Finder": ("RELOCATION TOPIC", "moving to leavenworth"),
+        "Community Interest Finder": ("COMMUNITY / INTEREST", "community events"),
     }
     return defaults.get(search_mode, ("KEYWORD", "roofing"))
+
+
+def suggestion_title(search_mode: str) -> str:
+    titles = {
+        "Public Intent Search": "Suggested public intent phrases",
+        "Relocation Interest Finder": "Suggested relocation phrases",
+        "Community Interest Finder": "Suggested community phrases",
+    }
+    return titles.get(search_mode, "Suggested search phrases")
 
 
 def dedupe_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -782,6 +806,8 @@ def render_results_card(df: pd.DataFrame, title: str = "Lead Results"):
         "ad_package_reason",
         "pitch_reason",
         "pitch_angle",
+        "title",
+        "snippet",
     ]
 
     visible_cols = [c for c in preferred_cols if c in df.columns]
@@ -826,43 +852,67 @@ with tab1:
         )
 
         if scan_mode == "Single ZIP Deep Scan":
-            zip_code = st.text_input("ZIP CODE", value="66048")
+            zip_code = st.text_input("ZIP CODE", value="66048", key="zip_code_single")
             zip_list_text = ""
         else:
             zip_code = ""
-            zip_list_text = st.text_area("ZIP LIST", value="66048, 66044, 66086", height=120)
+            zip_list_text = st.text_area(
+                "ZIP LIST",
+                value="66048, 66044, 66086",
+                height=120,
+                key="zip_list_multi",
+            )
 
-        radius = st.number_input("RADIUS (miles)", min_value=1, max_value=100, value=10, step=1)
-        area_label = st.text_input("CITY / AREA LABEL", value="Leavenworth")
+        radius = st.number_input(
+            "RADIUS (miles)",
+            min_value=1,
+            max_value=100,
+            value=10,
+            step=1,
+            key="campaign_radius",
+        )
+
+        area_label = st.text_input(
+            "CITY / AREA LABEL",
+            value="Leavenworth",
+            key="campaign_area_label",
+        )
 
         search_mode = st.selectbox(
             "Search Mode",
-            [
-                "Marketing Prospect Finder",
-                "Custom Business Search",
-                "Public Intent Search",
-                "Relocation Interest Finder",
-                "Community Interest Finder",
-            ],
+            BUSINESS_SEARCH_MODES + PUBLIC_SEARCH_MODES,
             index=0,
+            key="campaign_search_mode",
         )
 
         label, default_value = default_prompt(search_mode)
-        category_or_topic = st.text_input(label, value=default_value)
+        category_or_topic = st.text_input(
+            label,
+            value=default_value,
+            key="campaign_topic_keyword",
+        )
 
-        if search_mode in ["Public Intent Search", "Relocation Interest Finder", "Community Interest Finder"]:
-            with st.expander("Suggested public search phrases"):
-                for phrase in expand_topic_queries(
+        if search_mode in PUBLIC_SEARCH_MODES:
+            with st.expander(suggestion_title(search_mode), expanded=False):
+                phrases = expand_topic_queries(
                     search_mode,
                     category_or_topic.strip(),
                     zip_code=zip_code.strip(),
                     area_label=area_label.strip(),
-                ):
-                    st.code(phrase, language=None)
+                )
+
+                if phrases:
+                    st.markdown("\n".join([f"- `{phrase}`" for phrase in phrases]))
+                else:
+                    st.caption("No suggestions yet. Enter a keyword or area.")
+
+            st.info(
+                f"{search_mode} is currently using stable fallback phrase generation so the mode stays usable while you finalize external public-page search."
+            )
 
         ad_pack_choice = recommend_frontend_pack(search_mode, category_or_topic.strip())
 
-        run_search = st.button("FIND LEADS", use_container_width=True)
+        run_search = st.button("FIND LEADS", use_container_width=True, key="run_search_main")
 
     with right_col:
         render_section_header(
@@ -870,17 +920,40 @@ with tab1:
             "Google key is stored in app secrets. Reps only need to run searches.",
         )
 
-        use_google = st.checkbox("Use Google API if available", value=True)
-        use_osm = st.checkbox("Use OpenStreetMap backup", value=False)
-        do_enrich = st.checkbox("Find public business contact info", value=True)
-        enrich_limit = st.number_input("Max rows to enrich", min_value=0, max_value=5000, value=100, step=25)
-        do_score = st.checkbox("Score business leads", value=True)
-        trim_results = st.checkbox("Trim final results", value=False)
-        final_cap = st.selectbox("Final result cap", [100, 250, 500, 1000, 2500, 5000], index=2)
-        show_debug = st.checkbox("Show debug counts", value=True)
+        use_google = st.checkbox("Use Google API if available", value=True, key="use_google_main")
+        use_osm = st.checkbox("Use OpenStreetMap backup", value=False, key="use_osm_main")
+        do_enrich = st.checkbox("Find public business contact info", value=True, key="do_enrich_main")
+        enrich_limit = st.number_input(
+            "Max rows to enrich",
+            min_value=0,
+            max_value=5000,
+            value=100,
+            step=25,
+            key="enrich_limit_main",
+        )
+        do_score = st.checkbox("Score business leads", value=True, key="do_score_main")
+        trim_results = st.checkbox("Trim final results", value=False, key="trim_results_main")
+        final_cap = st.selectbox(
+            "Final result cap",
+            [100, 250, 500, 1000, 2500, 5000],
+            index=2,
+            key="final_cap_main",
+        )
+        show_debug = st.checkbox("Show debug counts", value=True, key="show_debug_main")
 
-        public_pages_only = st.checkbox("Public pages only", value=True)
-        max_pages = st.slider("Public search pages", 1, 10, 4)
+        public_pages_only = st.checkbox(
+            "Public pages only",
+            value=False if search_mode in PUBLIC_SEARCH_MODES else True,
+            key="public_pages_only_main",
+        )
+
+        max_pages = st.slider(
+            "Public search pages",
+            1,
+            10,
+            6 if search_mode in PUBLIC_SEARCH_MODES else 4,
+            key="max_pages_main",
+        )
 
     if run_search:
         try:
@@ -894,7 +967,7 @@ with tab1:
 
             all_rows = []
 
-            if search_mode in ["Marketing Prospect Finder", "Custom Business Search"]:
+            if search_mode in BUSINESS_SEARCH_MODES:
                 if not zips:
                     st.error("Please enter at least one ZIP code for business searches.")
                 else:
@@ -966,11 +1039,10 @@ with tab1:
 
             if not all_rows:
                 st.warning("No results found.")
-                if search_mode in ["Public Intent Search", "Relocation Interest Finder", "Community Interest Finder"]:
+
+                if search_mode in PUBLIC_SEARCH_MODES:
                     st.info(
-                        "This usually means the issue is inside search_public_topics(...) or the query is too narrow. "
-                        "Try increasing Public search pages, turning off Public pages only, or testing a broader phrase like "
-                        "'moving', 'relocation', or 'interstate movers'."
+                        "No public results came back for this run. Try a broader phrase, increase Public search pages, or turn off Public pages only."
                     )
             else:
                 df = pd.DataFrame(all_rows)
@@ -1022,6 +1094,7 @@ with tab1:
                         file_name=f"search_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                         mime="text/csv",
                         use_container_width=True,
+                        key="download_results_csv",
                     )
                 with d2:
                     st.download_button(
@@ -1030,6 +1103,7 @@ with tab1:
                         file_name=f"search_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         use_container_width=True,
+                        key="download_results_excel",
                     )
 
         except Exception as e:
@@ -1054,16 +1128,17 @@ with tab2:
 
         c1, c2, c3 = st.columns(3)
         with c1:
-            package_name = st.text_input("Package Name", value="MWH Lead Package")
+            package_name = st.text_input("Package Name", value="MWH Lead Package", key="package_name_input")
         with c2:
-            prepared_by = st.text_input("Prepared By", value=user_name or user_email)
+            prepared_by = st.text_input("Prepared By", value=user_name or user_email, key="prepared_by_input")
         with c3:
             max_rows = st.number_input(
                 "Max Leads in Package",
                 min_value=10,
                 max_value=5000,
                 value=min(250, len(df)),
-                step=10
+                step=10,
+                key="package_max_rows",
             )
 
         st.markdown("### What Package Should You Pitch?")
@@ -1114,7 +1189,7 @@ with tab2:
             meta=meta,
         )
 
-        st.text_area("Package Summary", value=summary_text, height=220)
+        st.text_area("Package Summary", value=summary_text, height=220, key="package_summary_text")
         render_results_card(package_df, title="Package Preview")
 
         client_csv = client_df.to_csv(index=False).encode("utf-8")
@@ -1129,7 +1204,8 @@ with tab2:
                 data=client_csv,
                 file_name=f"{package_name.lower().replace(' ', '_')}_client.csv",
                 mime="text/csv",
-                use_container_width=True
+                use_container_width=True,
+                key="download_client_csv",
             )
         with d2:
             st.download_button(
@@ -1137,7 +1213,8 @@ with tab2:
                 data=crm_csv,
                 file_name=f"{package_name.lower().replace(' ', '_')}_crm.csv",
                 mime="text/csv",
-                use_container_width=True
+                use_container_width=True,
+                key="download_crm_csv",
             )
         with d3:
             st.download_button(
@@ -1145,7 +1222,8 @@ with tab2:
                 data=client_excel,
                 file_name=f"{package_name.lower().replace(' ', '_')}_client.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True
+                use_container_width=True,
+                key="download_client_excel",
             )
         with d4:
             st.download_button(
@@ -1153,7 +1231,8 @@ with tab2:
                 data=zip_bytes,
                 file_name=f"{package_name.lower().replace(' ', '_')}_package.zip",
                 mime="application/zip",
-                use_container_width=True
+                use_container_width=True,
+                key="download_full_zip",
             )
 
 
@@ -1168,16 +1247,18 @@ with tab3:
 
     planner_mode = st.selectbox(
         "Planner Mode",
-        [
-            "Public Intent Search",
-            "Relocation Interest Finder",
-            "Community Interest Finder",
-        ],
+        PUBLIC_SEARCH_MODES,
         index=0,
+        key="planner_mode_select",
     )
-    planner_topic = st.text_input("Main Keyword", value="need a roofer")
-    planner_zip = st.text_input("ZIP", value="66048")
-    planner_area = st.text_input("Area Label", value="Leavenworth")
+
+    planner_topic = st.text_input(
+        "Main Keyword",
+        value="roofing company",
+        key="planner_topic",
+    )
+    planner_zip = st.text_input("ZIP", value="66048", key="planner_zip")
+    planner_area = st.text_input("Area Label", value="Leavenworth", key="planner_area")
 
     phrases = expand_topic_queries(
         planner_mode,
@@ -1187,12 +1268,14 @@ with tab3:
     )
 
     render_section_header(
-        "Suggested Search Phrases",
+        suggestion_title(planner_mode),
         "Use these to widen discovery without lowering relevance too aggressively.",
     )
 
-    for phrase in phrases:
-        st.code(phrase, language=None)
+    if phrases:
+        st.markdown("\n".join([f"- `{phrase}`" for phrase in phrases]))
+    else:
+        st.info("Enter a keyword and area to generate phrase ideas.")
 
 
 st.markdown("---")

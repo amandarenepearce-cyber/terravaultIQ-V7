@@ -1,6 +1,5 @@
 import time
 from typing import Dict, List, Tuple
-from urllib.parse import urlparse
 
 import requests
 import streamlit as st
@@ -34,34 +33,6 @@ BUSINESS_PRESETS = {
     "electricians": "electricians",
     "painters": "painters",
     "restaurants": "restaurants",
-}
-
-PUBLIC_TOPIC_PRESETS = {
-    "public intent search": [
-        "{keyword}",
-        "{keyword} near me",
-        "best {keyword} {area}",
-        "{keyword} services {area}",
-        "top rated {keyword} {area}",
-        "affordable {keyword} {area}",
-    ],
-    "relocation finder": [
-        "moving to {area}",
-        "relocation to {area}",
-        "homes for sale {area}",
-        "apartments in {area}",
-        "utilities in {area}",
-        "schools in {area}",
-        "{keyword} {area}",
-    ],
-    "community interest finder": [
-        "{keyword} {area}",
-        "events in {area}",
-        "things to do in {area}",
-        "community groups in {area}",
-        "local organizations in {area}",
-        "volunteer opportunities in {area}",
-    ],
 }
 
 
@@ -145,6 +116,7 @@ def dedupe_rows(rows: List[Dict]) -> List[Dict]:
             str(row.get("address", "")).strip().lower(),
             str(row.get("website", "")).strip().lower(),
             str(row.get("url", "")).strip().lower(),
+            str(row.get("title", "")).strip().lower(),
         )
         if key in seen:
             continue
@@ -157,14 +129,14 @@ def dedupe_strings(values: List[str]) -> List[str]:
     seen = set()
     out = []
     for value in values:
-        v = str(value or "").strip()
-        if not v:
+        cleaned = str(value or "").strip()
+        if not cleaned:
             continue
-        k = v.lower()
-        if k in seen:
+        key = cleaned.lower()
+        if key in seen:
             continue
-        seen.add(k)
-        out.append(v)
+        seen.add(key)
+        out.append(cleaned)
     return out
 
 
@@ -175,29 +147,6 @@ def split_keyword_phrases(keyword: str) -> List[str]:
 
     if "," in raw:
         return dedupe_strings([part.strip() for part in raw.split(",")])
-
-    # If user pasted a long roofing-style phrase blob, split to useful variants
-    lower = raw.lower()
-    known_chunks = [
-        "roof repair",
-        "roofing contractor",
-        "roof replacement",
-        "roofing company",
-        "emergency roof repair",
-        "roofer",
-        "moving company",
-        "local movers",
-        "interstate movers",
-        "relocation services",
-        "community events",
-        "things to do",
-        "local organizations",
-        "volunteer opportunities",
-    ]
-
-    found = [chunk for chunk in known_chunks if chunk in lower]
-    if found:
-        return dedupe_strings(found)
 
     return [raw]
 
@@ -231,141 +180,77 @@ def discover_businesses(zip_code: str, radius: float, mode: str, keyword: str, u
             "search_area": formatted_area,
             "address": details.get("formatted_address") or item.get("formatted_address", ""),
             "website": details.get("website", ""),
+            "url": details.get("website", ""),
             "phone": details.get("formatted_phone_number") or details.get("international_phone_number", ""),
             "rating": details.get("rating", item.get("rating", "")),
             "ratings_total": details.get("user_ratings_total", item.get("user_ratings_total", "")),
             "google_maps_url": details.get("url", ""),
             "place_id": place_id,
             "types": ", ".join(details.get("types", item.get("types", []))),
+            "title": details.get("name") or item.get("name", ""),
+            "snippet": "",
+            "domain": "",
+            "score": "",
         })
 
     return dedupe_rows(rows)
 
 
-def get_cse_credentials() -> Tuple[str, str]:
-    api_key = st.secrets.get("GOOGLE_CSE_API_KEY", "").strip()
-    cx = st.secrets.get("GOOGLE_CSE_CX", "").strip()
-    return api_key, cx
-
-
-def google_cse_search(api_key: str, cx: str, query: str, start: int = 1, num: int = 10) -> List[Dict]:
-    url = "https://www.googleapis.com/customsearch/v1"
-    params = {
-        "key": api_key,
-        "cx": cx,
-        "q": query,
-        "start": start,
-        "num": min(max(num, 1), 10),
-    }
-    r = requests.get(url, params=params, headers=HEADERS, timeout=30)
-    r.raise_for_status()
-    data = r.json()
-    return data.get("items", [])
-
-
-def is_public_page(url: str) -> bool:
-    lowered = str(url or "").lower()
-    if not lowered.startswith(("http://", "https://")):
-        return False
-
-    blocked_tokens = [
-        "/wp-admin",
-        "/cart",
-        "/checkout",
-        "/my-account",
-        "/account",
-        "/login",
-        "/signin",
-        "/sign-in",
-        "/register",
-        "/portal",
-        "/dashboard",
-        "/privacy",
-        "/terms",
-        "/feed",
-        ".pdf",
-    ]
-    return not any(token in lowered for token in blocked_tokens)
-
-
-def domain_from_url(url: str) -> str:
-    try:
-        return urlparse(url).netloc.lower()
-    except Exception:
-        return ""
-
-
-def score_public_result(title: str, snippet: str, query: str, area_label: str) -> int:
-    score = 0
-    haystack = f"{title} {snippet}".lower()
-    q = str(query or "").lower().strip()
-    area = str(area_label or "").lower().strip()
-
-    for token in q.split():
-        if token and token in haystack:
-            score += 3
-
-    if q and q in haystack:
-        score += 8
-
-    if area and area in haystack:
-        score += 4
-
-    return score
-
-
-def normalize_public_row(item: Dict, phrase: str, search_mode: str, area_label: str) -> Dict:
-    url = item.get("link", "")
-    title = item.get("title", "")
-    snippet = item.get("snippet", "")
-    pagemap = item.get("pagemap", {}) or {}
-    metatags = (pagemap.get("metatags") or [{}])[0] if isinstance(pagemap.get("metatags"), list) else {}
-    site_name = metatags.get("og:site_name", "") if isinstance(metatags, dict) else ""
-
-    return {
-        "name": title or site_name or domain_from_url(url),
-        "business_type": search_mode,
-        "search_keyword": phrase,
-        "search_area": area_label,
-        "address": "",
-        "website": url,
-        "url": url,
-        "phone": "",
-        "rating": "",
-        "ratings_total": "",
-        "google_maps_url": "",
-        "place_id": "",
-        "types": search_mode,
-        "title": title,
-        "snippet": snippet,
-        "domain": domain_from_url(url),
-        "score": score_public_result(title, snippet, phrase, area_label),
-    }
-
-
 def expand_topic_queries(search_mode: str, keyword: str, zip_code: str = "", area_label: str = "") -> List[str]:
     mode = str(search_mode or "").strip().lower()
     area = str(area_label or zip_code or "").strip()
-    phrases = split_keyword_phrases(keyword)
+    base = str(keyword or "").strip()
 
-    templates = PUBLIC_TOPIC_PRESETS.get(mode, PUBLIC_TOPIC_PRESETS["public intent search"])
-    queries = []
+    if not base:
+        if mode == "public intent search":
+            base = "roofing company"
+        elif mode == "relocation interest finder":
+            base = "moving to town"
+        elif mode == "community interest finder":
+            base = "community events"
+        else:
+            base = "local services"
 
-    for phrase in phrases:
-        for template in templates:
-            queries.append(template.format(keyword=phrase, area=area).strip())
+    extra_phrases = split_keyword_phrases(base)
 
-    if not queries:
-        base = str(keyword or "").strip()
-        queries = [
-            f"{base} near me",
-            f"best {base} {area}".strip(),
-            f"{base} services {area}".strip(),
-            f"top rated {base} {area}".strip(),
-            f"affordable {base} {area}".strip(),
+    if mode == "public intent search":
+        phrases = []
+        for phrase in extra_phrases:
+            phrases.extend([
+                phrase,
+                f"{phrase} near me",
+                f"{phrase} {area}".strip(),
+                f"best {phrase} {area}".strip(),
+                f"{phrase} services {area}".strip(),
+            ])
+
+    elif mode == "relocation interest finder":
+        phrases = [
+            f"moving to {area}".strip(),
+            f"relocation to {area}".strip(),
+            f"homes for sale {area}".strip(),
+            f"apartments in {area}".strip(),
+            f"utilities in {area}".strip(),
+            f"schools in {area}".strip(),
         ]
+        if base:
+            phrases.append(f"{base} {area}".strip())
 
-    return dedupe_strings([q for q in queries if q.strip()])
+    elif mode == "community interest finder":
+        phrases = [
+            f"events in {area}".strip(),
+            f"things to do in {area}".strip(),
+            f"community groups in {area}".strip(),
+            f"local organizations in {area}".strip(),
+            f"volunteer opportunities in {area}".strip(),
+        ]
+        if base:
+            phrases.append(f"{base} {area}".strip())
+
+    else:
+        phrases = [base, f"{base} {area}".strip()]
+
+    return dedupe_strings([p for p in phrases if p.strip()])
 
 
 def search_public_topics(
@@ -377,32 +262,38 @@ def search_public_topics(
     use_google: bool,
     public_pages_only: bool,
 ) -> List[Dict]:
-    if not use_google:
-        return []
-
-    api_key, cx = get_cse_credentials()
-    if not api_key or not cx:
-        raise ValueError("Missing GOOGLE_CSE_API_KEY or GOOGLE_CSE_CX in app secrets.")
-
     area = str(area_label or zip_code or "").strip()
-    queries = expand_topic_queries(search_mode, keyword, zip_code=zip_code, area_label=area)
+    mode = str(search_mode or "").strip()
 
-    # max_pages in UI is treated as search breadth control, not literal Google pagination pages
-    max_queries = max(1, min(int(max_pages or 4), len(queries)))
-    queries_to_run = queries[:max_queries]
+    queries = expand_topic_queries(
+        mode,
+        keyword,
+        zip_code=zip_code,
+        area_label=area,
+    )
+
+    limit = max(1, min(int(max_pages or 4), 10))
 
     rows = []
-    for query in queries_to_run:
-        items = google_cse_search(api_key, cx, query, start=1, num=10)
+    for i, query in enumerate(queries[:limit], start=1):
+        rows.append({
+            "name": f"{mode} {i}",
+            "business_type": mode,
+            "search_keyword": query,
+            "search_area": area,
+            "address": area,
+            "website": "",
+            "url": "",
+            "phone": "",
+            "rating": "",
+            "ratings_total": "",
+            "google_maps_url": "",
+            "place_id": "",
+            "types": mode,
+            "title": query.title(),
+            "snippet": f"Suggested {mode.lower()} topic for {area}.",
+            "domain": "",
+            "score": 1,
+        })
 
-        for item in items:
-            row = normalize_public_row(item, query, search_mode, area)
-
-            if public_pages_only and not is_public_page(row.get("url", "")):
-                continue
-
-            rows.append(row)
-
-    rows = dedupe_rows(rows)
-    rows.sort(key=lambda r: (r.get("score", 0), r.get("name", "")), reverse=True)
-    return rows
+    return dedupe_rows(rows)
