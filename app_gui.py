@@ -1169,16 +1169,26 @@ with tab2:
 
         c1, c2, c3 = st.columns(3)
         with c1:
-            package_name = st.text_input("Package Name", value="MWH Lead Package", key="package_name_input")
+            package_name = st.text_input(
+                "Package Name",
+                value="MWH Lead Package",
+                key="package_name_input"
+            )
         with c2:
-            prepared_by = st.text_input("Prepared By", value=user_name or user_email, key="prepared_by_input")
+            prepared_by = st.text_input(
+                "Prepared By",
+                value=user_name or user_email,
+                key="prepared_by_input"
+            )
         with c3:
+            max_rows_default = max(1, min(250, len(df)))
+
             max_rows = st.number_input(
                 "Max Leads in Package",
-                min_value=10,
+                min_value=1,
                 max_value=5000,
-                value=min(250, len(df)),
-                step=10,
+                value=max_rows_default,
+                step=1,
                 key="package_max_rows",
             )
 
