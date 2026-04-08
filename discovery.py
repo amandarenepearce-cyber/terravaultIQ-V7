@@ -228,13 +228,18 @@ def expand_topic_queries(search_mode: str, keyword: str, zip_code: str = "", are
         phrases = [
             f"moving to {area}".strip(),
             f"relocation to {area}".strip(),
-            f"homes for sale {area}".strip(),
+            f"homes for sale in {area}".strip(),
             f"apartments in {area}".strip(),
-            f"utilities in {area}".strip(),
+            f"cost of living in {area}".strip(),
+            f"best neighborhoods in {area}".strip(),
             f"schools in {area}".strip(),
+            f"utilities in {area}".strip(),
         ]
         if base:
-            phrases.append(f"{base} {area}".strip())
+            phrases.extend([
+                f"{base} {area}".strip(),
+                f"{base} near {area}".strip(),
+            ])
 
     elif mode == "community interest finder":
         phrases = [
@@ -253,6 +258,277 @@ def expand_topic_queries(search_mode: str, keyword: str, zip_code: str = "", are
     return dedupe_strings([p for p in phrases if p.strip()])
 
 
+def _estimate_audience_size(search_mode: str, intent_phrase: str, area: str) -> int:
+    phrase = str(intent_phrase or "").lower()
+    mode = str(search_mode or "").lower()
+    area_bonus = min(max(len(str(area or "").strip()) * 12, 0), 240)
+
+    score = 180
+    if "relocation" in mode:
+        score += 450
+    if "moving to" in phrase or "moving from" in phrase:
+        score += 650
+    if "homes for sale" in phrase or "apartments" in phrase:
+        score += 500
+    if "realtor" in phrase or "real estate" in phrase:
+        score += 350
+    if "cost of living" in phrase or "neighborhood" in phrase or "schools" in phrase:
+        score += 220
+    if "near me" in phrase or "best " in phrase:
+        score += 110
+
+    estimate = score + area_bonus
+    return int(round(estimate / 25.0) * 25)
+
+
+def _quality_label(estimate: int) -> str:
+    if estimate >= 1400:
+        return "strong"
+    if estimate >= 700:
+        return "fair"
+    return "weak"
+
+
+def _confidence_label(search_mode: str, intent_phrase: str) -> str:
+    phrase = str(intent_phrase or "").lower()
+    if "moving to" in phrase or "moving from" in phrase or "relocation" in phrase:
+        return "high"
+    if "homes for sale" in phrase or "apartments" in phrase or "realtor" in phrase:
+        return "medium"
+    return "medium" if str(search_mode or "").lower() == "relocation interest finder" else "low"
+
+
+def _move_direction(intent_phrase: str) -> str:
+    phrase = str(intent_phrase or "").lower()
+    if "moving to" in phrase or "relocation to" in phrase:
+        return "into"
+    if "moving from" in phrase or "relocation from" in phrase:
+        return "out_of"
+    return "both"
+
+
+def _relocation_type(intent_phrase: str, keyword: str) -> str:
+    text = f"{intent_phrase} {keyword}".lower()
+    if "pcs" in text or "military" in text or "fort" in text:
+        return "military"
+    if "retire" in text or "retirement" in text:
+        return "retirement"
+    if "job" in text or "work" in text or "corporate" in text:
+        return "corporate"
+    if "apartment" in text or "rent" in text:
+        return "renter"
+    if "home" in text or "realtor" in text or "sale" in text:
+        return "buyer"
+    return "general"
+
+
+def _recommended_channel(search_mode: str, intent_phrase: str) -> str:
+    phrase = str(intent_phrase or "").lower()
+    mode = str(search_mode or "").lower()
+
+    if mode == "relocation interest finder":
+        if "moving to" in phrase or "homes for sale" in phrase or "apartments" in phrase:
+            return "Google Search"
+        if "schools" in phrase or "neighborhood" in phrase or "cost of living" in phrase:
+            return "Meta + Retargeting"
+        return "Google Search + Meta"
+
+    if mode == "community interest finder":
+        return "Meta"
+    return "Google Search"
+
+
+def _recommended_offer(search_mode: str, intent_phrase: str) -> str:
+    phrase = str(intent_phrase or "").lower()
+    mode = str(search_mode or "").lower()
+
+    if mode == "relocation interest finder":
+        if "homes for sale" in phrase:
+            return "New resident home list"
+        if "apartments" in phrase:
+            return "Rental guide"
+        if "schools" in phrase:
+            return "School district guide"
+        if "cost of living" in phrase:
+            return "Cost of living guide"
+        if "neighborhood" in phrase:
+            return "Neighborhood map"
+        return "Free relocation guide"
+
+    if mode == "community interest finder":
+        return "Local guide"
+    return "Free estimate"
+
+
+def _landing_page_angle(search_mode: str, intent_phrase: str, area: str) -> str:
+    phrase = str(intent_phrase or "").lower()
+    area = str(area or "").strip()
+
+    if str(search_mode or "").lower() == "relocation interest finder":
+        if "homes for sale" in phrase:
+            return f"Moving to {area}? Browse local homes."
+        if "apartments" in phrase:
+            return f"Relocating to {area}? Start with rentals."
+        if "schools" in phrase:
+            return f"Thinking about {area}? Compare school options."
+        if "cost of living" in phrase:
+            return f"See what it really costs to live in {area}."
+        if "neighborhood" in phrase:
+            return f"Find the best neighborhoods in {area}."
+        return f"Moving to {area}? Start with a relocation guide."
+
+    return f"Find trusted options in {area}."
+
+
+def _build_public_intent_row(search_mode: str, query: str, area: str, base_keyword: str) -> Dict:
+    estimate = _estimate_audience_size(search_mode, query, area)
+    quality = _quality_label(estimate)
+    confidence = _confidence_label(search_mode, query)
+
+    row = {
+        "name": query.title(),
+        "business_type": search_mode,
+        "search_keyword": query,
+        "search_area": area,
+        "address": area,
+        "website": "",
+        "url": "",
+        "phone": "",
+        "rating": "",
+        "ratings_total": "",
+        "google_maps_url": "",
+        "place_id": "",
+        "types": search_mode,
+        "title": query.title(),
+        "snippet": f"Modeled audience signal for {area}. Use this phrase for campaign planning and audience targeting.",
+        "domain": "",
+        "score": estimate,
+        "intent_phrase": query,
+        "intent_type": "local_service_intent",
+        "move_direction": "",
+        "relocation_type": "",
+        "target_market": area,
+        "estimated_audience_size": estimate,
+        "confidence": confidence,
+        "quality_label": quality,
+        "recommended_channel": _recommended_channel(search_mode, query),
+        "recommended_offer": _recommended_offer(search_mode, query),
+        "landing_page_angle": _landing_page_angle(search_mode, query, area),
+        "pitch_opening_line": f"People in and around {area} are likely searching phrases like '{query}'.",
+        "pitch_offer": f"Recommended offer: {_recommended_offer(search_mode, query)} via {_recommended_channel(search_mode, query)}.",
+        "pitch_cta": f"Build a landing page and ad group around '{query}' for {area}.",
+        "pitch_reason": f"Modeled {quality} demand based on search-intent phrasing.",
+        "pitch_angle": base_keyword or query,
+        "needs_leads_score": estimate,
+        "needs_leads_tier": "Hot" if quality == "strong" else "Warm" if quality == "fair" else "Cold",
+        "needs_leads_reason": f"Audience estimate {estimate} with {confidence} confidence.",
+    }
+    return row
+
+
+def _build_relocation_row(query: str, area: str, base_keyword: str) -> Dict:
+    estimate = _estimate_audience_size("relocation interest finder", query, area)
+    quality = _quality_label(estimate)
+    confidence = _confidence_label("relocation interest finder", query)
+    move_direction = _move_direction(query)
+    relocation_type = _relocation_type(query, base_keyword)
+
+    offer = _recommended_offer("relocation interest finder", query)
+    channel = _recommended_channel("relocation interest finder", query)
+    landing_page = _landing_page_angle("relocation interest finder", query, area)
+
+    row = {
+        "name": query.title(),
+        "business_type": "Relocation Interest Audience",
+        "search_keyword": query,
+        "search_area": area,
+        "address": area,
+        "website": "",
+        "url": "",
+        "phone": "",
+        "rating": "",
+        "ratings_total": "",
+        "google_maps_url": "",
+        "place_id": "",
+        "types": "relocation audience",
+        "title": query.title(),
+        "snippet": f"Modeled relocation-intent audience for {area}. Best used for ads, landing pages, and retargeting rather than direct outreach.",
+        "domain": "",
+        "score": estimate,
+        "intent_phrase": query,
+        "intent_type": "relocation_intent",
+        "move_direction": move_direction,
+        "relocation_type": relocation_type,
+        "target_market": area,
+        "estimated_audience_size": estimate,
+        "confidence": confidence,
+        "quality_label": quality,
+        "recommended_channel": channel,
+        "recommended_offer": offer,
+        "landing_page_angle": landing_page,
+        "pitch_opening_line": f"People showing relocation interest toward {area} may respond to '{query}'.",
+        "pitch_offer": f"Best next move: run {channel} with a '{offer}' offer.",
+        "pitch_cta": f"Use a destination page: {landing_page}",
+        "pitch_reason": f"Relocation audience modeled as {quality} quality with {confidence} confidence.",
+        "pitch_angle": "relocation",
+        "needs_leads_score": estimate,
+        "needs_leads_tier": "Hot" if quality == "strong" else "Warm" if quality == "fair" else "Cold",
+        "needs_leads_reason": f"Audience estimate {estimate}; move_direction={move_direction}; relocation_type={relocation_type}.",
+        "audience_name": f"{area} Relocation Intent Audience",
+        "market_region": area,
+        "channel": channel,
+        "audience_type": "privacy_safe_modeled_audience",
+        "warning_status": "under_100" if estimate < 100 else "ok",
+    }
+    return row
+
+
+def _build_community_row(query: str, area: str, base_keyword: str) -> Dict:
+    estimate = _estimate_audience_size("community interest finder", query, area)
+    quality = _quality_label(estimate)
+    confidence = _confidence_label("community interest finder", query)
+
+    row = {
+        "name": query.title(),
+        "business_type": "Community Interest Audience",
+        "search_keyword": query,
+        "search_area": area,
+        "address": area,
+        "website": "",
+        "url": "",
+        "phone": "",
+        "rating": "",
+        "ratings_total": "",
+        "google_maps_url": "",
+        "place_id": "",
+        "types": "community audience",
+        "title": query.title(),
+        "snippet": f"Modeled community-interest audience for {area}. Good for awareness and local engagement campaigns.",
+        "domain": "",
+        "score": estimate,
+        "intent_phrase": query,
+        "intent_type": "community_interest",
+        "move_direction": "",
+        "relocation_type": "",
+        "target_market": area,
+        "estimated_audience_size": estimate,
+        "confidence": confidence,
+        "quality_label": quality,
+        "recommended_channel": "Meta",
+        "recommended_offer": "Local guide",
+        "landing_page_angle": f"See what is happening in {area}.",
+        "pitch_opening_line": f"People interested in {area} may engage with '{query}'.",
+        "pitch_offer": "Lead with a local guide or event roundup.",
+        "pitch_cta": f"Build an awareness campaign around '{query}'.",
+        "pitch_reason": f"Modeled {quality} community-interest demand.",
+        "pitch_angle": base_keyword or query,
+        "needs_leads_score": estimate,
+        "needs_leads_tier": "Hot" if quality == "strong" else "Warm" if quality == "fair" else "Cold",
+        "needs_leads_reason": f"Audience estimate {estimate} with {confidence} confidence.",
+    }
+    return row
+
+
 def search_public_topics(
     search_mode: str,
     keyword: str,
@@ -264,36 +540,26 @@ def search_public_topics(
 ) -> List[Dict]:
     area = str(area_label or zip_code or "").strip()
     mode = str(search_mode or "").strip()
+    base_keyword = str(keyword or "").strip()
 
     queries = expand_topic_queries(
         mode,
-        keyword,
+        base_keyword,
         zip_code=zip_code,
         area_label=area,
     )
 
     limit = max(1, min(int(max_pages or 4), 10))
+    selected_queries = queries[:limit]
 
     rows = []
-    for i, query in enumerate(queries[:limit], start=1):
-        rows.append({
-            "name": f"{mode} {i}",
-            "business_type": mode,
-            "search_keyword": query,
-            "search_area": area,
-            "address": area,
-            "website": "",
-            "url": "",
-            "phone": "",
-            "rating": "",
-            "ratings_total": "",
-            "google_maps_url": "",
-            "place_id": "",
-            "types": mode,
-            "title": query.title(),
-            "snippet": f"Suggested {mode.lower()} topic for {area}.",
-            "domain": "",
-            "score": 1,
-        })
+    for query in selected_queries:
+        mode_lower = mode.lower()
+        if mode_lower == "relocation interest finder":
+            rows.append(_build_relocation_row(query, area, base_keyword))
+        elif mode_lower == "community interest finder":
+            rows.append(_build_community_row(query, area, base_keyword))
+        else:
+            rows.append(_build_public_intent_row(mode, query, area, base_keyword))
 
     return dedupe_rows(rows)
