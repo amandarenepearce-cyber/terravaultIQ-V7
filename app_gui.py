@@ -1,4 +1,3 @@
-
 import io
 import json
 import os
@@ -37,334 +36,113 @@ st.set_page_config(
 
 inject_brand_theme()
 
-# ---------------------------------------------------------
-# FIX DROPDOWNS / INPUTS / BUTTONS
-# ---------------------------------------------------------
 st.markdown(
     """
     <style>
-    /* ===== PAGE / LAYOUT ===== */
-    .stApp {
-        background:
-            radial-gradient(circle at top left, rgba(22, 101, 52, 0.10), transparent 28%),
-            linear-gradient(180deg, #f4f7f5 0%, #eef3f0 100%) !important;
-        color: #0f172a !important;
+    .block-container {
+        max-width: 1280px;
+        padding-top: 1.25rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
+        padding-bottom: 2rem;
+        margin: 0 auto;
     }
 
-    .block-container {
-        max-width: 1380px !important;
-        padding-top: 1.25rem !important;
-        padding-right: 2.25rem !important;
-        padding-left: 2.25rem !important;
-        padding-bottom: 2.5rem !important;
-        margin: 0 auto !important;
+    .main {
+        padding-top: 0.25rem;
     }
 
     section.main > div {
-        max-width: 100% !important;
-        padding-right: 0.25rem !important;
-        padding-left: 0.25rem !important;
-        overflow-x: visible !important;
-    }
-
-    [data-testid="stAppViewContainer"] {
-        overflow-x: hidden !important;
+        padding-right: 0.5rem;
     }
 
     div[data-testid="stHorizontalBlock"] {
-        gap: 1.6rem !important;
-        align-items: start !important;
+        gap: 1.5rem !important;
     }
 
-    /* ===== HIDE STREAMLIT DEFAULT CHROME A BIT ===== */
-    header[data-testid="stHeader"] {
-        background: rgba(255,255,255,0) !important;
-    }
-
-    /* ===== TYPOGRAPHY ===== */
-    html, body, [class*="css"] {
-        color: #0f172a;
-    }
-
-    label, .stMarkdown, p, span, div {
-        color: inherit;
-    }
-
-    /* ===== CARDS ===== */
-    .tv-card,
-    .tv-helper-card,
-    div[data-testid="stMetric"],
-    div[data-testid="stDataFrame"] {
-        box-sizing: border-box !important;
-    }
-
-    .tv-card {
-        background: rgba(255,255,255,0.92) !important;
-        border: 1px solid #d8e3dc !important;
-        border-radius: 22px !important;
-        padding: 1.15rem 1.35rem !important;
-        box-shadow: 0 14px 40px rgba(15, 23, 42, 0.10) !important;
-        margin-bottom: 1rem !important;
-    }
-
-    .tv-card h2 {
-        margin: 0 !important;
-        color: #0f172a !important;
-    }
-
-    .tv-card-sub {
-        color: #475569 !important;
-        margin-top: 0.45rem !important;
-    }
-
-    .tv-helper-card {
-        background: #ffffff !important;
-        border: 1px solid #d8e3dc !important;
-        border-radius: 18px !important;
-        padding: 16px 18px !important;
-        margin-top: 12px !important;
-        margin-bottom: 12px !important;
-        box-shadow: 0 10px 28px rgba(15,23,42,0.06) !important;
-    }
-
-    .tv-helper-title {
-        font-size: 1.05rem;
-        font-weight: 700;
-        margin-bottom: 8px;
-        color: #0f172a !important;
-    }
-
-    .tv-helper-label {
-        color: #166534 !important;
-        font-weight: 700;
-        margin-top: 8px;
-        margin-bottom: 2px;
-    }
-
-    .tv-helper-copy {
-        color: #334155 !important;
-        line-height: 1.5;
-    }
-
-    .tv-kicker {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 999px;
-        background: #ecfdf3 !important;
-        border: 1px solid #bbf7d0 !important;
-        color: #166534 !important;
-        font-size: 0.82rem;
-        font-weight: 700;
-        margin-bottom: 10px;
-    }
-
-    /* ===== HERO ===== */
-    .tv-hero {
-        background: linear-gradient(135deg, #0b3b2e 0%, #14532d 45%, #166534 100%) !important;
-        color: #ffffff !important;
-        border-radius: 24px !important;
-        padding: 1.8rem 1.8rem 1.7rem 1.8rem !important;
-        border: 1px solid rgba(255,255,255,0.08) !important;
-        box-shadow: 0 16px 46px rgba(5, 46, 22, 0.22) !important;
-        margin-bottom: 1rem !important;
-    }
-
-    .tv-hero * {
-        color: #ffffff !important;
-    }
-
-    .tv-pill {
-        display: inline-block;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: rgba(255,255,255,0.10);
-        border: 1px solid rgba(255,255,255,0.14);
-        font-size: 0.84rem;
-        font-weight: 700;
-        margin-bottom: 0.85rem;
-    }
-
-    .tv-hero h1 {
-        margin: 0;
-        line-height: 1.02;
-        font-size: clamp(2rem, 4vw, 3.35rem);
-        letter-spacing: -0.03em;
-    }
-
-    .tv-hero .accent {
-        color: #d1fae5 !important;
-    }
-
-    .tv-hero p {
-        margin-top: 0.9rem;
-        max-width: 760px;
-        color: rgba(255,255,255,0.92) !important;
-        font-size: 1rem;
-    }
-
-    /* ===== TABS ===== */
-    button[data-baseweb="tab"] {
-        background: rgba(255,255,255,0.75) !important;
-        border: 1px solid #d7e2db !important;
-        border-radius: 14px !important;
-        color: #0f172a !important;
-        font-weight: 700 !important;
-        padding: 0.65rem 1rem !important;
-        margin-right: 0.45rem !important;
-    }
-
-    button[data-baseweb="tab"][aria-selected="true"] {
-        background: linear-gradient(135deg, #14532d 0%, #166534 100%) !important;
-        color: #ffffff !important;
-        border-color: #166534 !important;
-        box-shadow: 0 10px 20px rgba(22, 101, 52, 0.18) !important;
-    }
-
-    /* ===== INPUTS ===== */
-    .stTextInput > div > div > input,
-    .stTextArea textarea,
-    .stNumberInput input {
-        background: #ffffff !important;
-        color: #0f172a !important;
-        border: 1px solid #cdd8d1 !important;
-        border-radius: 18px !important;
-        box-shadow: 0 3px 10px rgba(15,23,42,0.03) !important;
-    }
-
-    .stTextInput > div > div > input:focus,
-    .stTextArea textarea:focus,
-    .stNumberInput input:focus {
-        border-color: #22c55e !important;
-        box-shadow: 0 0 0 0.18rem rgba(34,197,94,0.14) !important;
-    }
-
-    .stTextInput input::placeholder,
-    .stTextArea textarea::placeholder,
-    .stNumberInput input::placeholder {
-        color: #94a3b8 !important;
-        opacity: 1 !important;
-    }
-
-    /* ===== SELECT / DROPDOWN ===== */
     div[data-baseweb="select"] {
         width: 100% !important;
     }
 
     div[data-baseweb="select"] > div {
         width: 100% !important;
-        min-height: 62px !important;
-        background: linear-gradient(135deg, #0d3c2f 0%, #114d38 100%) !important;
-        border: 1px solid #166534 !important;
-        border-radius: 22px !important;
+        box-sizing: border-box !important;
+        background: linear-gradient(90deg, #0b3b2a 0%, #0d4f36 100%) !important;
         color: #ffffff !important;
+        border: 1px solid rgba(16, 185, 129, 0.25) !important;
+        border-radius: 14px !important;
+        min-height: 3.25rem !important;
         box-shadow: none !important;
     }
 
-    div[data-baseweb="select"] > div:hover {
-        border-color: #22c55e !important;
-    }
-
-    div[data-baseweb="select"] * {
+    div[data-baseweb="select"] div,
+    div[data-baseweb="select"] span,
+    div[data-baseweb="select"] svg,
+    div[data-baseweb="select"] input {
         color: #ffffff !important;
-        fill: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
     }
 
-    div[data-baseweb="popover"] {
-        background: transparent !important;
-    }
-
-    div[data-baseweb="menu"] {
+    div[data-baseweb="popover"],
+    div[data-baseweb="menu"],
+    div[role="listbox"],
+    ul[role="listbox"] {
         background: #ffffff !important;
-        border: 1px solid #d7e2db !important;
-        border-radius: 16px !important;
-        box-shadow: 0 14px 38px rgba(15,23,42,0.10) !important;
-        padding: 6px !important;
+        color: #111827 !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 12px !important;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.10) !important;
     }
 
-    ul[role="listbox"],
-    div[role="listbox"] {
-        background: #ffffff !important;
-        color: #0f172a !important;
-        border-radius: 16px !important;
-        padding: 4px !important;
+    div[data-baseweb="menu"] *,
+    div[role="listbox"] *,
+    ul[role="listbox"] * {
+        color: #111827 !important;
     }
 
     li[role="option"],
     div[role="option"] {
         background: #ffffff !important;
-        color: #0f172a !important;
-        border-radius: 12px !important;
-    }
-
-    li[role="option"] *,
-    div[role="option"] * {
-        color: #0f172a !important;
+        color: #111827 !important;
     }
 
     li[role="option"]:hover,
     div[role="option"]:hover,
     li[role="option"][aria-selected="true"],
     div[role="option"][aria-selected="true"] {
-        background: #ecfdf3 !important;
-        color: #14532d !important;
+        background: #eef6f2 !important;
+        color: #111827 !important;
     }
 
-    li[role="option"]:hover *,
-    div[role="option"]:hover *,
-    li[role="option"][aria-selected="true"] *,
-    div[role="option"][aria-selected="true"] * {
-        color: #14532d !important;
-    }
-
-    /* ===== LABELS / HELP TEXT ===== */
-    .stSelectbox label,
-    .stTextInput label,
-    .stTextArea label,
-    .stNumberInput label,
-    .stRadio label,
-    .stCheckbox label,
-    .stSlider label {
+    .stTextInput input,
+    .stTextArea textarea,
+    .stNumberInput input {
+        background: #ffffff !important;
         color: #0f172a !important;
-        font-weight: 700 !important;
+        border: 1px solid #d5ddd8 !important;
+        border-radius: 14px !important;
+        box-shadow: none !important;
     }
 
-    p, .stCaption, [data-testid="stMarkdownContainer"] p {
-        color: #334155 !important;
-    }
-
-    /* ===== RADIO / CHECKBOX ===== */
-    div[role="radiogroup"] label,
-    [data-testid="stCheckbox"] label,
-    [data-testid="stWidgetLabel"] {
-        color: #0f172a !important;
-        font-weight: 600 !important;
+    .stTextInput input::placeholder,
+    .stTextArea textarea::placeholder,
+    .stNumberInput input::placeholder {
+        color: #6b7280 !important;
         opacity: 1 !important;
     }
 
-    input[type="radio"],
-    input[type="checkbox"] {
-        accent-color: #ef4444;
-    }
-
-    /* ===== SLIDER ===== */
-    [data-testid="stSlider"] * {
-        color: #0f172a !important;
-    }
-
-    /* ===== BUTTONS ===== */
     .stButton > button,
     .stDownloadButton > button,
     .stFormSubmitButton > button,
     button[kind="primary"],
     button[kind="secondary"] {
-        min-height: 58px !important;
-        background: linear-gradient(135deg, #166534 0%, #15803d 100%) !important;
+        background: linear-gradient(90deg, #0f6b3b 0%, #166534 100%) !important;
         color: #ffffff !important;
-        border: 1px solid #166534 !important;
-        border-radius: 20px !important;
-        font-weight: 800 !important;
-        letter-spacing: 0.01em !important;
-        box-shadow: 0 10px 22px rgba(22,101,52,0.18) !important;
+        border: none !important;
+        border-radius: 16px !important;
+        min-height: 3.6rem !important;
+        font-weight: 700 !important;
+        box-shadow: 0 8px 20px rgba(22, 101, 52, 0.18) !important;
     }
 
     .stButton > button:hover,
@@ -372,52 +150,68 @@ st.markdown(
     .stFormSubmitButton > button:hover,
     button[kind="primary"]:hover,
     button[kind="secondary"]:hover {
-        background: linear-gradient(135deg, #15803d 0%, #16a34a 100%) !important;
-        border-color: #22c55e !important;
+        background: linear-gradient(90deg, #166534 0%, #15803d 100%) !important;
+        color: #ffffff !important;
         transform: translateY(-1px);
     }
 
-    .stButton > button *,
-    .stDownloadButton > button *,
-    .stFormSubmitButton > button *,
-    button[kind="primary"] *,
-    button[kind="secondary"] * {
-        color: #ffffff !important;
+    .stRadio label,
+    .stCheckbox label,
+    .stSelectbox label,
+    .stMultiSelect label,
+    .stTextInput label,
+    .stTextArea label,
+    .stNumberInput label {
+        color: #0f172a !important;
+        font-weight: 700 !important;
     }
 
-    /* ===== METRICS / TABLE ===== */
-    div[data-testid="stMetric"] {
-        background: rgba(255,255,255,0.88) !important;
-        border: 1px solid #d8e3dc !important;
-        border-radius: 18px !important;
-        padding: 0.9rem 1rem !important;
-        box-shadow: 0 8px 20px rgba(15,23,42,0.05) !important;
+    [data-testid="stMetric"] {
+        background: #ffffff;
+        border: 1px solid #dce5df;
+        border-radius: 22px;
+        padding: 1rem 1.2rem;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
     }
 
-    div[data-testid="stDataFrame"] {
-        background: #ffffff !important;
-        border: 1px solid #d8e3dc !important;
-        border-radius: 18px !important;
-        overflow: hidden !important;
+    .tv-helper-card {
+        background: linear-gradient(180deg, rgba(15,23,42,0.96) 0%, rgba(2,6,23,0.98) 100%);
+        border: 1px solid rgba(51, 65, 85, 0.95);
+        border-radius: 18px;
+        padding: 16px 18px;
+        margin-top: 12px;
+        margin-bottom: 12px;
     }
 
-    /* ===== DIVIDERS ===== */
-    hr {
-        border: none !important;
-        border-top: 1px solid #d8e3dc !important;
-        margin-top: 2rem !important;
-        margin-bottom: 1rem !important;
+    .tv-helper-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #ffffff;
     }
 
-    /* ===== MOBILE / SMALLER VIEWPORT ===== */
-    @media (max-width: 1200px) {
-        .block-container {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-        }
-        div[data-testid="stHorizontalBlock"] {
-            gap: 1rem !important;
-        }
+    .tv-helper-label {
+        color: #86efac;
+        font-weight: 700;
+        margin-top: 8px;
+        margin-bottom: 2px;
+    }
+
+    .tv-helper-copy {
+        color: #e5e7eb;
+        line-height: 1.5;
+    }
+
+    .tv-kicker {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(20, 83, 45, 0.25);
+        border: 1px solid rgba(34, 197, 94, 0.45);
+        color: #dcfce7;
+        font-size: 0.82rem;
+        font-weight: 700;
+        margin-bottom: 10px;
     }
     </style>
     """,
@@ -485,12 +279,19 @@ AD_PACK_DETAILS = {
         "why": "Covers the full buyer journey so the customer gets a more complete growth system instead of a one-channel play.",
         "rep_talk_track": "This package helps attract attention, build trust, and drive action across the full customer journey.",
     },
+    "Relocation Capture Package": {
+        "best_for": "Realtors, movers, lenders, and apartments targeting people likely planning a move.",
+        "why": "Turns modeled relocation signals into search, social, and landing-page campaigns built around move intent.",
+        "rep_talk_track": "This package helps you show up when people are researching a move and gives them a reason to convert with a guide, home list, or quote.",
+    },
 }
 
 
 def recommend_frontend_pack(search_mode: str, keyword: str) -> str:
     text = f"{search_mode} {keyword}".lower()
 
+    if "relocation interest finder" in text:
+        return "Relocation Capture Package"
     if any(term in text for term in ["moving", "relocation", "interstate", "movers"]):
         return "Google Ads"
     if any(term in text for term in ["event", "grand opening", "launch", "festival", "sale"]):
@@ -683,6 +484,17 @@ def hot_lead_count(df: pd.DataFrame) -> int:
     return int((df["needs_leads_tier"].astype(str) == "Hot").sum())
 
 
+def is_public_audience_df(df: pd.DataFrame) -> bool:
+    if df.empty:
+        return False
+    if "intent_phrase" in df.columns:
+        return True
+    if "search_mode" in df.columns:
+        modes = set(df["search_mode"].dropna().astype(str))
+        return any(mode in PUBLIC_SEARCH_MODES for mode in modes)
+    return False
+
+
 def add_display_columns(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
@@ -770,6 +582,13 @@ def add_display_columns(df: pd.DataFrame) -> pd.DataFrame:
         service_terms = ["roofing", "cleaning", "hvac", "plumbing", "contractor", "landscaping", "remodeling"]
 
         combined_text = f"{keyword} {search_mode} {business_type}".lower()
+
+        if "relocation interest finder" in combined_text:
+            return (
+                "Relocation Capture Package",
+                "$1,500-$3,500 + ad spend",
+                "Built for campaigns targeting people researching a move into or out of a market.",
+            )
 
         if any(term in combined_text for term in relocation_terms):
             return (
@@ -874,6 +693,29 @@ def build_summary_text(
 def fallback_client_export_df(df: pd.DataFrame) -> pd.DataFrame:
     df = add_display_columns(df)
 
+    if is_public_audience_df(df):
+        preferred = [
+            "name",
+            "intent_phrase",
+            "intent_type",
+            "move_direction",
+            "relocation_type",
+            "target_market",
+            "estimated_audience_size",
+            "confidence",
+            "quality_label",
+            "recommended_channel",
+            "recommended_offer",
+            "landing_page_angle",
+            "pitch_summary",
+            "ad_package_recommendation",
+            "ad_package_price_range",
+            "ad_package_reason",
+        ]
+        cols = [c for c in preferred if c in df.columns]
+        remainder = [c for c in df.columns if c not in cols]
+        return df[cols + remainder].copy()
+
     preferred = [
         "name",
         "best_contact_name",
@@ -904,6 +746,19 @@ def fallback_client_export_df(df: pd.DataFrame) -> pd.DataFrame:
 
 def fallback_crm_export_df(df: pd.DataFrame) -> pd.DataFrame:
     out = pd.DataFrame()
+
+    if is_public_audience_df(df):
+        out["audience_name"] = df["name"] if "name" in df.columns else ""
+        out["intent_phrase"] = df["intent_phrase"] if "intent_phrase" in df.columns else ""
+        out["target_market"] = df["target_market"] if "target_market" in df.columns else ""
+        out["recommended_channel"] = df["recommended_channel"] if "recommended_channel" in df.columns else ""
+        out["recommended_offer"] = df["recommended_offer"] if "recommended_offer" in df.columns else ""
+        out["quality_label"] = df["quality_label"] if "quality_label" in df.columns else ""
+        out["estimated_audience_size"] = df["estimated_audience_size"] if "estimated_audience_size" in df.columns else ""
+        out["notes"] = df["pitch_summary"] if "pitch_summary" in df.columns else ""
+        out["owner"] = user_email
+        return out
+
     out["name"] = df["name"] if "name" in df.columns else ""
     out["primary_email"] = df["primary_email"] if "primary_email" in df.columns else ""
     out["primary_phone"] = df["primary_phone"] if "primary_phone" in df.columns else (df["phone"] if "phone" in df.columns else "")
@@ -1011,35 +866,72 @@ def get_package_zip_bytes(
 
 
 def render_results_card(df: pd.DataFrame, title: str = "Lead Results"):
-    render_section_header(title, "Review, score, and export client-ready lead packages.")
-
     df = add_display_columns(df)
+    is_public_mode = is_public_audience_df(df)
 
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Total Results", len(df))
-    m2.metric("With Website", safe_metric_count(df, "website"))
-    m3.metric("With Email", safe_metric_count(df, "primary_email"))
-    m4.metric("Hot Leads", hot_lead_count(df))
+    if is_public_mode:
+        render_section_header(
+            title,
+            "Review modeled intent phrases, audience strength, recommended channels, and offer ideas.",
+        )
 
-    preferred_cols = [
-        "name",
-        "best_contact_name",
-        "primary_email",
-        "primary_phone",
-        "website",
-        "address",
-        "business_type",
-        "needs_leads_score",
-        "needs_leads_tier",
-        "pitch_summary",
-        "ad_package_recommendation",
-        "ad_package_price_range",
-        "ad_package_reason",
-        "pitch_reason",
-        "pitch_angle",
-        "title",
-        "snippet",
-    ]
+        estimate_series = pd.to_numeric(df.get("estimated_audience_size", pd.Series([0] * len(df))), errors="coerce").fillna(0)
+        strong_count = int((df.get("quality_label", pd.Series([""] * len(df))).astype(str).str.lower() == "strong").sum())
+        channel_count = int(df.get("recommended_channel", pd.Series([""] * len(df))).astype(str).replace("", pd.NA).dropna().nunique())
+        avg_estimate = int(estimate_series.mean()) if len(estimate_series) else 0
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Intent Phrases", len(df))
+        m2.metric("Strong Audiences", strong_count)
+        m3.metric("Avg Audience Size", avg_estimate)
+        m4.metric("Channels Used", channel_count)
+
+        preferred_cols = [
+            "name",
+            "intent_phrase",
+            "intent_type",
+            "move_direction",
+            "relocation_type",
+            "target_market",
+            "estimated_audience_size",
+            "confidence",
+            "quality_label",
+            "recommended_channel",
+            "recommended_offer",
+            "landing_page_angle",
+            "pitch_summary",
+            "ad_package_recommendation",
+            "ad_package_price_range",
+            "ad_package_reason",
+        ]
+    else:
+        render_section_header(title, "Review, score, and export client-ready lead packages.")
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Total Results", len(df))
+        m2.metric("With Website", safe_metric_count(df, "website"))
+        m3.metric("With Email", safe_metric_count(df, "primary_email"))
+        m4.metric("Hot Leads", hot_lead_count(df))
+
+        preferred_cols = [
+            "name",
+            "best_contact_name",
+            "primary_email",
+            "primary_phone",
+            "website",
+            "address",
+            "business_type",
+            "needs_leads_score",
+            "needs_leads_tier",
+            "pitch_summary",
+            "ad_package_recommendation",
+            "ad_package_price_range",
+            "ad_package_reason",
+            "pitch_reason",
+            "pitch_angle",
+            "title",
+            "snippet",
+        ]
 
     visible_cols = [c for c in preferred_cols if c in df.columns]
     remaining_cols = [c for c in df.columns if c not in visible_cols]
@@ -1138,7 +1030,7 @@ with tab1:
                     st.caption("No suggestions yet. Enter a keyword or area.")
 
             st.info(
-                f"{search_mode} is currently using stable fallback phrase generation so the mode stays usable while you finalize external public-page search."
+                f"{search_mode} is built for modeled audience planning, messaging, and channel recommendations rather than direct person-level outreach."
             )
 
         ad_pack_choice = recommend_frontend_pack(search_mode, category_or_topic.strip())
@@ -1240,7 +1132,7 @@ with tab1:
 
             else:
                 target_zips = zips if zips else [""]
-                progress = st.progress(0, text="Searching public pages...")
+                progress = st.progress(0, text="Building audience signals...")
 
                 for idx, z in enumerate(target_zips):
                     rows = search_public_topics(
@@ -1262,7 +1154,7 @@ with tab1:
                         row["front_end_ad_pack_choice"] = ad_pack_choice
 
                     all_rows.extend(rows)
-                    progress.progress((idx + 1) / len(target_zips), text=f"Public search {idx + 1}/{len(target_zips)}")
+                    progress.progress((idx + 1) / len(target_zips), text=f"Audience build {idx + 1}/{len(target_zips)}")
 
                 progress.empty()
 
@@ -1273,7 +1165,7 @@ with tab1:
 
                 if search_mode in PUBLIC_SEARCH_MODES:
                     st.info(
-                        "No public results came back for this run. Try a broader phrase, increase Public search pages, or turn off Public pages only."
+                        "No audience signals came back for this run. Try a broader phrase or add more search pages."
                     )
             else:
                 df = pd.DataFrame(all_rows)
@@ -1312,7 +1204,8 @@ with tab1:
                     d3.metric("After Dedupe", after_dedupe_count)
                     d4.metric("Final Rows", final_count)
 
-                render_results_card(df, title="Lead Results")
+                result_title = "Audience Results" if search_mode in PUBLIC_SEARCH_MODES else "Lead Results"
+                render_results_card(df, title=result_title)
 
                 csv_bytes = df.to_csv(index=False).encode("utf-8")
                 excel_bytes = get_excel_bytes(df)
@@ -1356,12 +1249,13 @@ with tab2:
         df = sort_by_score_if_present(st.session_state.results_df.copy())
         df = add_display_columns(df)
         meta = st.session_state.last_run_meta or {}
+        public_mode = is_public_audience_df(df)
 
         c1, c2, c3 = st.columns(3)
         with c1:
             package_name = st.text_input(
                 "Package Name",
-                value="MWH Lead Package",
+                value="MWH Audience Package" if public_mode else "MWH Lead Package",
                 key="package_name_input"
             )
         with c2:
@@ -1374,13 +1268,16 @@ with tab2:
             max_rows_default = max(1, min(250, len(df)))
 
             max_rows = st.number_input(
-                "Max Leads in Package",
+                "Max Rows in Package",
                 min_value=1,
                 max_value=5000,
                 value=max_rows_default,
                 step=1,
                 key="package_max_rows",
             )
+
+        if public_mode:
+            st.info("This package contains modeled audience signals and campaign-planning recommendations, not direct outreach contacts.")
 
         st.markdown("### What Package Should You Pitch?")
 
@@ -1393,6 +1290,7 @@ with tab2:
             "Retargeting",
             "Local SEO + Google Ads",
             "Full Funnel Package",
+            "Relocation Capture Package",
         ]
 
         if default_pack not in package_options:
