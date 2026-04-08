@@ -39,6 +39,7 @@ inject_brand_theme()
 st.markdown(
     """
     <style>
+    /* ---------- Page layout ---------- */
     .block-container {
         max-width: 1280px;
         padding-top: 1.25rem;
@@ -60,60 +61,7 @@ st.markdown(
         gap: 1.5rem !important;
     }
 
-    div[data-baseweb="select"] {
-        width: 100% !important;
-    }
-
-    div[data-baseweb="select"] > div {
-        width: 100% !important;
-        box-sizing: border-box !important;
-        background: linear-gradient(90deg, #0b3b2a 0%, #0d4f36 100%) !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(16, 185, 129, 0.25) !important;
-        border-radius: 14px !important;
-        min-height: 3.25rem !important;
-        box-shadow: none !important;
-    }
-
-    div[data-baseweb="select"] div,
-    div[data-baseweb="select"] span,
-    div[data-baseweb="select"] svg,
-    div[data-baseweb="select"] input {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-    }
-
-    div[data-baseweb="popover"],
-    div[data-baseweb="menu"],
-    div[role="listbox"],
-    ul[role="listbox"] {
-        background: #ffffff !important;
-        color: #111827 !important;
-        border: 1px solid #d1d5db !important;
-        border-radius: 12px !important;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.10) !important;
-    }
-
-    div[data-baseweb="menu"] *,
-    div[role="listbox"] *,
-    ul[role="listbox"] * {
-        color: #111827 !important;
-    }
-
-    li[role="option"],
-    div[role="option"] {
-        background: #ffffff !important;
-        color: #111827 !important;
-    }
-
-    li[role="option"]:hover,
-    div[role="option"]:hover,
-    li[role="option"][aria-selected="true"],
-    div[role="option"][aria-selected="true"] {
-        background: #eef6f2 !important;
-        color: #111827 !important;
-    }
-
+    /* ---------- Inputs ---------- */
     .stTextInput input,
     .stTextArea textarea,
     .stNumberInput input {
@@ -131,6 +79,76 @@ st.markdown(
         opacity: 1 !important;
     }
 
+    /* ---------- Selectboxes: LIGHT CLOSED STATE ---------- */
+    div[data-baseweb="select"] {
+        width: 100% !important;
+    }
+
+    div[data-baseweb="select"] > div {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border: 1px solid #d5ddd8 !important;
+        border-radius: 14px !important;
+        min-height: 3.25rem !important;
+        box-shadow: none !important;
+    }
+
+    div[data-baseweb="select"] > div:hover {
+        border-color: #b7c6be !important;
+    }
+
+    /* selected value / placeholder / icon */
+    div[data-baseweb="select"] span,
+    div[data-baseweb="select"] div,
+    div[data-baseweb="select"] input,
+    div[data-baseweb="select"] svg,
+    div[data-baseweb="select"] svg path {
+        color: #0f172a !important;
+        fill: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+    }
+
+    /* menu popover */
+    div[data-baseweb="popover"] {
+        background: transparent !important;
+    }
+
+    div[data-baseweb="menu"],
+    ul[role="listbox"],
+    div[role="listbox"] {
+        background: #ffffff !important;
+        color: #111827 !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 12px !important;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.10) !important;
+        padding: 4px !important;
+    }
+
+    div[data-baseweb="menu"] *,
+    ul[role="listbox"] *,
+    div[role="listbox"] * {
+        color: #111827 !important;
+        fill: #111827 !important;
+    }
+
+    li[role="option"],
+    div[role="option"] {
+        background: #ffffff !important;
+        color: #111827 !important;
+        border-radius: 8px !important;
+    }
+
+    li[role="option"]:hover,
+    div[role="option"]:hover,
+    li[role="option"][aria-selected="true"],
+    div[role="option"][aria-selected="true"] {
+        background: #eef6f2 !important;
+        color: #111827 !important;
+    }
+
+    /* ---------- Buttons ---------- */
     .stButton > button,
     .stDownloadButton > button,
     .stFormSubmitButton > button,
@@ -155,17 +173,28 @@ st.markdown(
         transform: translateY(-1px);
     }
 
+    .stButton > button *,
+    .stDownloadButton > button *,
+    .stFormSubmitButton > button *,
+    button[kind="primary"] *,
+    button[kind="secondary"] * {
+        color: #ffffff !important;
+    }
+
+    /* ---------- Labels ---------- */
     .stRadio label,
     .stCheckbox label,
     .stSelectbox label,
     .stMultiSelect label,
     .stTextInput label,
     .stTextArea label,
-    .stNumberInput label {
+    .stNumberInput label,
+    .stSlider label {
         color: #0f172a !important;
         font-weight: 700 !important;
     }
 
+    /* ---------- Metrics ---------- */
     [data-testid="stMetric"] {
         background: #ffffff;
         border: 1px solid #dce5df;
@@ -174,6 +203,7 @@ st.markdown(
         box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
     }
 
+    /* ---------- Helper cards ---------- */
     .tv-helper-card {
         background: linear-gradient(180deg, rgba(15,23,42,0.96) 0%, rgba(2,6,23,0.98) 100%);
         border: 1px solid rgba(51, 65, 85, 0.95);
@@ -225,9 +255,6 @@ if "last_run_meta" not in st.session_state:
     st.session_state.last_run_meta = {}
 
 
-# =========================================================
-# CONSTANTS
-# =========================================================
 BUSINESS_SEARCH_MODES = [
     "Marketing Prospect Finder",
     "Custom Business Search",
@@ -240,9 +267,6 @@ PUBLIC_SEARCH_MODES = [
 ]
 
 
-# =========================================================
-# AD PACK HELPER
-# =========================================================
 AD_PACK_DETAILS = {
     "SEO": {
         "best_for": "Long-term visibility and organic search traffic.",
@@ -324,9 +348,6 @@ def render_ad_pack_helper(selected_pack: str):
     )
 
 
-# =========================================================
-# AUTH GATE
-# =========================================================
 if not st.user.is_logged_in:
     st.markdown("""
     <div class="tv-hero">
@@ -354,9 +375,6 @@ if not user_email.endswith("@midwesthorizons.com"):
     st.stop()
 
 
-# =========================================================
-# SAFE FALLBACKS
-# =========================================================
 def _fallback_normalize_zip_list(text: str) -> List[str]:
     if not text:
         return []
@@ -374,9 +392,6 @@ build_package_zip_bytes = getattr(exports_mod, "build_package_zip_bytes", None)
 dataframe_to_excel_bytes = getattr(exports_mod, "dataframe_to_excel_bytes", None)
 
 
-# =========================================================
-# UI HELPERS
-# =========================================================
 def render_hero():
     st.markdown(
         f"""
@@ -394,7 +409,7 @@ def render_hero():
         unsafe_allow_html=True,
     )
 
-    top_a, top_b = st.columns([8, 1])
+    _, top_b = st.columns([8, 1])
     with top_b:
         st.button("Log out", on_click=st.logout, use_container_width=True)
 
@@ -944,19 +959,12 @@ def render_results_card(df: pd.DataFrame, title: str = "Lead Results"):
     )
 
 
-# =========================================================
-# HERO
-# =========================================================
 render_hero()
 
 tab1, tab2, tab3 = st.tabs(
     ["Campaign Search", "Client Package Builder", "Expansion Planner"]
 )
 
-
-# =========================================================
-# TAB 1
-# =========================================================
 with tab1:
     left_col, right_col = st.columns([2.15, 1], gap="large")
 
@@ -1234,9 +1242,6 @@ with tab1:
             st.error(f"Error: {e}")
 
 
-# =========================================================
-# TAB 2
-# =========================================================
 with tab2:
     render_section_header(
         "Build a Client Package",
@@ -1375,9 +1380,6 @@ with tab2:
             )
 
 
-# =========================================================
-# TAB 3
-# =========================================================
 with tab3:
     render_section_header(
         "Expansion Planner",
