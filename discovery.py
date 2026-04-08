@@ -1,3 +1,4 @@
+import math
 import time
 from typing import Dict, List, Tuple
 
@@ -35,6 +36,22 @@ BUSINESS_PRESETS = {
     "restaurants": "restaurants",
 }
 
+CATEGORY_VARIANTS = {
+    "roofers": ["roofers", "roofing contractor", "roofing company"],
+    "cleaning companies": ["cleaning companies", "house cleaning service", "maid service"],
+    "med spas": ["med spas", "medical spa"],
+    "mortgage lenders": ["mortgage lenders", "home loan lender", "loan officer"],
+    "credit unions": ["credit unions", "bank"],
+    "contractors": ["contractors", "general contractor", "home remodeling contractor"],
+    "real estate agents": ["real estate agents", "realtor", "real estate broker"],
+    "property management": ["property management", "property manager"],
+    "apartments": ["apartments", "apartment complex", "rental community"],
+    "plumbers": ["plumbers", "plumbing company"],
+    "electricians": ["electricians", "electrical contractor"],
+    "painters": ["painters", "painting contractor"],
+    "restaurants": ["restaurants", "restaurant"],
+}
+
 
 def normalize_keyword(keyword: str) -> str:
     raw = str(keyword or "").strip().lower()
@@ -56,13 +73,25 @@ def geocode_google(api_key: str, place: str) -> Tuple[float, float, str]:
     return loc["lat"], loc["lng"], result["formatted_address"]
 
 
-def places_search(api_key: str, query: str, lat: float, lng: float, radius_m: int, max_pages: int = 3) -> List[dict]:
-    url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
+def nearby_search(
+    api_key: str,
+    keyword: str,
+    lat: float,
+    lng: float,
+    radius_m: int,
+    max_pages: int = 3,
+) -> List[dict]:
+    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
     results = []
     next_page_token = None
 
     for _ in range(max_pages):
-        params = {"query": query, "location": f"{lat},{lng}", "radius": radius_m, "key": api_key}
+        params = {
+            "location": f"{lat},{lng}",
+            "radius": radius_m,
+            "keyword": keyword,
+            "key": api_key,
+        }
         if next_page_token:
             time.sleep(2.5)
             params = {"pagetoken": next_page_token, "key": api_key}
@@ -75,7 +104,7 @@ def places_search(api_key: str, query: str, lat: float, lng: float, radius_m: in
         if status not in ("OK", "ZERO_RESULTS"):
             if status == "INVALID_REQUEST" and next_page_token:
                 continue
-            raise ValueError(f"Google Places error: {status}")
+            raise ValueError(f"Google Nearby Search error: {status}")
 
         results.extend(data.get("results", []))
         next_page_token = data.get("next_page_token")
@@ -151,7 +180,60 @@ def split_keyword_phrases(keyword: str) -> List[str]:
     return [raw]
 
 
-def discover_businesses(zip_code: str, radius: float, mode: str, keyword: str, use_google: bool, use_osm: bool) -> List[Dict]:
+def keyword_variants(keyword: str) -> List[str]:
+    base = normalize_keyword(keyword)
+    variants = [base]
+
+    if base in CATEGORY_VARIANTS:
+        variants.extend(CATEGORY_VARIANTS[base])
+
+    raw = str(keyword or "").strip().lower()
+    if raw and raw != base:
+        variants.append(raw)
+
+    return dedupe_strings(variants)
+
+
+def meters_to_lat_delta(meters: float) -> float:
+    return meters / 111320.0
+
+
+def meters_to_lng_delta(meters: float, lat: float) -> float:
+    cos_lat = math.cos(math.radians(lat))
+    cos_lat = max(cos_lat, 0.2)
+    return meters / (111320.0 * cos_lat)
+
+
+def build_search_grid(lat: float, lng: float, radius_m: int) -> List[Tuple[float, float]]:
+    """
+    Create a grid of search points so the app can exceed the ~60-result ceiling
+    of a single Places query. Wider radii get more tiles.
+    """
+    if radius_m <= 8000:
+        return [(lat, lng)]
+
+    step_m = min(12000, max(4000, radius_m / 3))
+    lat_step = meters_to_lat_delta(step_m)
+    lng_step = meters_to_lng_delta(step_m, lat)
+
+    layers = max(1, min(4, int(radius_m / step_m)))
+    points = []
+
+    for x in range(-layers, layers + 1):
+        for y in range(-layers, layers + 1):
+            points.append((lat + x * lat_step, lng + y * lng_step))
+
+    return points
+
+
+def discover_businesses(
+    zip_code: str,
+    radius: float,
+    mode: str,
+    keyword: str,
+    use_google: bool,
+    use_osm: bool,
+) -> List[Dict]:
     api_key = st.secrets.get("GOOGLE_API_KEY", "").strip()
 
     if not use_google:
@@ -160,34 +242,62 @@ def discover_businesses(zip_code: str, radius: float, mode: str, keyword: str, u
     if not api_key:
         raise ValueError("Missing GOOGLE_API_KEY in app secrets.")
 
-    search_keyword = normalize_keyword(keyword)
     area = zip_code.strip()
     radius_m = int(float(radius) * 1609.34)
 
     lat, lng, formatted_area = geocode_google(api_key, area)
-    query = f"{search_keyword} in {formatted_area}"
-    search_results = places_search(api_key, query, lat, lng, radius_m)
+    grid_points = build_search_grid(lat, lng, radius_m)
+
+    all_items = []
+    for variant in keyword_variants(keyword):
+        for point_lat, point_lng in grid_points:
+            try:
+                items = nearby_search(
+                    api_key=api_key,
+                    keyword=variant,
+                    lat=point_lat,
+                    lng=point_lng,
+                    radius_m=min(radius_m, 25000),
+                    max_pages=3,
+                )
+                all_items.extend(items)
+            except Exception:
+                continue
 
     rows = []
-    for item in search_results:
+    for item in dedupe_rows([
+        {
+            "name": item.get("name", ""),
+            "address": item.get("vicinity", "") or item.get("formatted_address", ""),
+            "website": "",
+            "url": "",
+            "title": item.get("name", ""),
+            "place_id": item.get("place_id", ""),
+            "_raw": item,
+        }
+        for item in all_items
+    ]):
         place_id = item.get("place_id", "")
+        raw_item = item.get("_raw", {})
         details = get_place_details(api_key, place_id) if place_id else {}
 
+        normalized_keyword = normalize_keyword(keyword)
+
         rows.append({
-            "name": details.get("name") or item.get("name", ""),
-            "business_type": search_keyword,
-            "search_keyword": search_keyword,
+            "name": details.get("name") or raw_item.get("name", ""),
+            "business_type": normalized_keyword,
+            "search_keyword": normalized_keyword,
             "search_area": formatted_area,
-            "address": details.get("formatted_address") or item.get("formatted_address", ""),
+            "address": details.get("formatted_address") or raw_item.get("vicinity", "") or raw_item.get("formatted_address", ""),
             "website": details.get("website", ""),
             "url": details.get("website", ""),
             "phone": details.get("formatted_phone_number") or details.get("international_phone_number", ""),
-            "rating": details.get("rating", item.get("rating", "")),
-            "ratings_total": details.get("user_ratings_total", item.get("user_ratings_total", "")),
+            "rating": details.get("rating", raw_item.get("rating", "")),
+            "ratings_total": details.get("user_ratings_total", raw_item.get("user_ratings_total", "")),
             "google_maps_url": details.get("url", ""),
             "place_id": place_id,
-            "types": ", ".join(details.get("types", item.get("types", []))),
-            "title": details.get("name") or item.get("name", ""),
+            "types": ", ".join(details.get("types", raw_item.get("types", []))),
+            "title": details.get("name") or raw_item.get("name", ""),
             "snippet": "",
             "domain": "",
             "score": "",
@@ -385,7 +495,7 @@ def _build_public_intent_row(search_mode: str, query: str, area: str, base_keywo
     quality = _quality_label(estimate)
     confidence = _confidence_label(search_mode, query)
 
-    row = {
+    return {
         "name": query.title(),
         "business_type": search_mode,
         "search_keyword": query,
@@ -423,7 +533,6 @@ def _build_public_intent_row(search_mode: str, query: str, area: str, base_keywo
         "needs_leads_tier": "Hot" if quality == "strong" else "Warm" if quality == "fair" else "Cold",
         "needs_leads_reason": f"Audience estimate {estimate} with {confidence} confidence.",
     }
-    return row
 
 
 def _build_relocation_row(query: str, area: str, base_keyword: str) -> Dict:
@@ -437,7 +546,7 @@ def _build_relocation_row(query: str, area: str, base_keyword: str) -> Dict:
     channel = _recommended_channel("relocation interest finder", query)
     landing_page = _landing_page_angle("relocation interest finder", query, area)
 
-    row = {
+    return {
         "name": query.title(),
         "business_type": "Relocation Interest Audience",
         "search_keyword": query,
@@ -480,7 +589,6 @@ def _build_relocation_row(query: str, area: str, base_keyword: str) -> Dict:
         "audience_type": "privacy_safe_modeled_audience",
         "warning_status": "under_100" if estimate < 100 else "ok",
     }
-    return row
 
 
 def _build_community_row(query: str, area: str, base_keyword: str) -> Dict:
@@ -488,7 +596,7 @@ def _build_community_row(query: str, area: str, base_keyword: str) -> Dict:
     quality = _quality_label(estimate)
     confidence = _confidence_label("community interest finder", query)
 
-    row = {
+    return {
         "name": query.title(),
         "business_type": "Community Interest Audience",
         "search_keyword": query,
@@ -526,7 +634,6 @@ def _build_community_row(query: str, area: str, base_keyword: str) -> Dict:
         "needs_leads_tier": "Hot" if quality == "strong" else "Warm" if quality == "fair" else "Cold",
         "needs_leads_reason": f"Audience estimate {estimate} with {confidence} confidence.",
     }
-    return row
 
 
 def search_public_topics(
