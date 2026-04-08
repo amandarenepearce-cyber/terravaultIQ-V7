@@ -11,7 +11,6 @@ from PIL import Image
 from discovery import discover_businesses, search_public_topics, expand_topic_queries
 from enrichment import enrich_rows
 from scoring import score_rows
-from ui_theme import inject_brand_theme
 import packager as packager_mod
 import exports as exports_mod
 
@@ -34,13 +33,31 @@ st.set_page_config(
     layout="wide",
 )
 
-inject_brand_theme()
+# NOTE:
+# inject_brand_theme() was intentionally removed because it was overriding
+# the app styles and forcing the green background / broken dropdown behavior.
 
-# Strong override loaded AFTER brand theme
 st.markdown(
     """
     <style>
-    /* ---------- Page layout ---------- */
+    :root {
+        --tv-bg: #f4f7f5;
+        --tv-surface: #ffffff;
+        --tv-surface-soft: #f8faf9;
+        --tv-text: #0f172a;
+        --tv-muted: #64748b;
+        --tv-border: #d9e2dd;
+        --tv-green: #166534;
+        --tv-green-2: #0f6b3b;
+        --tv-green-soft: #eef6f2;
+        --tv-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    html, body, [data-testid="stAppViewContainer"], .stApp {
+        background: var(--tv-bg) !important;
+        color: var(--tv-text) !important;
+    }
+
     .block-container {
         max-width: 1280px !important;
         padding-top: 1.25rem !important;
@@ -48,10 +65,6 @@ st.markdown(
         padding-right: 2rem !important;
         padding-bottom: 2rem !important;
         margin: 0 auto !important;
-    }
-
-    .main {
-        padding-top: 0.25rem !important;
     }
 
     section.main > div {
@@ -62,16 +75,66 @@ st.markdown(
         gap: 1.5rem !important;
     }
 
-    /* ---------- Inputs ---------- */
+    /* Hide Streamlit header chrome spacing issues a bit */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+    }
+
+    /* Typography */
+    h1, h2, h3, h4, h5, h6, p, label, span, div {
+        color: var(--tv-text);
+    }
+
+    /* Hero + card shells used by your HTML blocks */
+    .tv-hero,
+    .tv-card {
+        background: var(--tv-surface) !important;
+        border: 1px solid var(--tv-border) !important;
+        border-radius: 24px !important;
+        box-shadow: var(--tv-shadow) !important;
+        padding: 1.5rem 1.6rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .tv-hero h1 {
+        font-size: 2.2rem !important;
+        line-height: 1.05 !important;
+        margin: 0 0 0.65rem 0 !important;
+        color: var(--tv-text) !important;
+    }
+
+    .tv-hero p,
+    .tv-card-sub {
+        color: var(--tv-muted) !important;
+        font-size: 1rem !important;
+    }
+
+    .tv-pill {
+        display: inline-block !important;
+        background: var(--tv-green-soft) !important;
+        color: var(--tv-green) !important;
+        border: 1px solid #cfe3d7 !important;
+        border-radius: 999px !important;
+        padding: 0.35rem 0.7rem !important;
+        font-size: 0.82rem !important;
+        font-weight: 700 !important;
+        margin-bottom: 0.85rem !important;
+    }
+
+    .accent {
+        color: var(--tv-green) !important;
+    }
+
+    /* Inputs */
     .stTextInput input,
     .stTextArea textarea,
     .stNumberInput input,
     [data-testid="stTextInput"] input,
     [data-testid="stTextArea"] textarea,
     [data-testid="stNumberInput"] input {
-        background: #ffffff !important;
-        color: #0f172a !important;
-        border: 1px solid #d5ddd8 !important;
+        background: var(--tv-surface) !important;
+        color: var(--tv-text) !important;
+        border: 1px solid var(--tv-border) !important;
         border-radius: 14px !important;
         box-shadow: none !important;
         background-image: none !important;
@@ -80,26 +143,14 @@ st.markdown(
     .stTextInput input::placeholder,
     .stTextArea textarea::placeholder,
     .stNumberInput input::placeholder {
-        color: #6b7280 !important;
+        color: var(--tv-muted) !important;
         opacity: 1 !important;
     }
 
-    /* ---------- Selectboxes: FORCE LIGHT CLOSED STATE ---------- */
+    /* Selectboxes */
     [data-testid="stSelectbox"],
     [data-testid="stMultiSelect"] {
         width: 100% !important;
-    }
-
-    [data-testid="stSelectbox"] > div,
-    [data-testid="stMultiSelect"] > div {
-        width: 100% !important;
-    }
-
-    [data-testid="stSelectbox"] div[data-baseweb="select"],
-    [data-testid="stMultiSelect"] div[data-baseweb="select"] {
-        width: 100% !important;
-        background: transparent !important;
-        background-image: none !important;
     }
 
     [data-testid="stSelectbox"] div[data-baseweb="select"] > div,
@@ -108,11 +159,11 @@ st.markdown(
         width: 100% !important;
         min-height: 3.25rem !important;
         box-sizing: border-box !important;
-        background: #ffffff !important;
-        background-color: #ffffff !important;
+        background: var(--tv-surface) !important;
+        background-color: var(--tv-surface) !important;
         background-image: none !important;
-        color: #0f172a !important;
-        border: 1px solid #d5ddd8 !important;
+        color: var(--tv-text) !important;
+        border: 1px solid var(--tv-border) !important;
         border-radius: 14px !important;
         box-shadow: none !important;
     }
@@ -120,63 +171,45 @@ st.markdown(
     [data-testid="stSelectbox"] div[data-baseweb="select"] > div:hover,
     [data-testid="stMultiSelect"] div[data-baseweb="select"] > div:hover,
     div[data-baseweb="select"] > div:hover {
-        border-color: #b7c6be !important;
-        background: #ffffff !important;
-        background-color: #ffffff !important;
+        border-color: #b6c8bd !important;
+        background: var(--tv-surface) !important;
     }
 
-    /* text/value/icon inside closed select */
-    [data-testid="stSelectbox"] div[data-baseweb="select"] * ,
-    [data-testid="stMultiSelect"] div[data-baseweb="select"] * ,
+    [data-testid="stSelectbox"] div[data-baseweb="select"] *,
+    [data-testid="stMultiSelect"] div[data-baseweb="select"] *,
     div[data-baseweb="select"] * {
-        color: #0f172a !important;
-        -webkit-text-fill-color: #0f172a !important;
+        color: var(--tv-text) !important;
+        -webkit-text-fill-color: var(--tv-text) !important;
+        fill: var(--tv-text) !important;
     }
 
-    [data-testid="stSelectbox"] div[data-baseweb="select"] svg,
-    [data-testid="stMultiSelect"] div[data-baseweb="select"] svg,
-    div[data-baseweb="select"] svg,
-    [data-testid="stSelectbox"] div[data-baseweb="select"] svg path,
-    [data-testid="stMultiSelect"] div[data-baseweb="select"] svg path,
-    div[data-baseweb="select"] svg path {
-        fill: #0f172a !important;
-        color: #0f172a !important;
-    }
-
-    /* popover/menu */
     div[data-baseweb="popover"] {
         background: transparent !important;
-        background-color: transparent !important;
-        background-image: none !important;
     }
 
     div[data-baseweb="menu"],
     ul[role="listbox"],
     div[role="listbox"] {
-        background: #ffffff !important;
-        background-color: #ffffff !important;
-        background-image: none !important;
-        color: #111827 !important;
-        border: 1px solid #d1d5db !important;
+        background: var(--tv-surface) !important;
+        color: var(--tv-text) !important;
+        border: 1px solid var(--tv-border) !important;
         border-radius: 12px !important;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.10) !important;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12) !important;
         padding: 4px !important;
     }
 
     div[data-baseweb="menu"] *,
     ul[role="listbox"] *,
     div[role="listbox"] * {
-        color: #111827 !important;
-        fill: #111827 !important;
-        -webkit-text-fill-color: #111827 !important;
+        color: var(--tv-text) !important;
+        fill: var(--tv-text) !important;
+        -webkit-text-fill-color: var(--tv-text) !important;
     }
 
     li[role="option"],
     div[role="option"] {
-        background: #ffffff !important;
-        background-color: #ffffff !important;
-        background-image: none !important;
-        color: #111827 !important;
+        background: var(--tv-surface) !important;
+        color: var(--tv-text) !important;
         border-radius: 8px !important;
     }
 
@@ -184,22 +217,21 @@ st.markdown(
     div[role="option"]:hover,
     li[role="option"][aria-selected="true"],
     div[role="option"][aria-selected="true"] {
-        background: #eef6f2 !important;
-        background-color: #eef6f2 !important;
-        color: #111827 !important;
+        background: var(--tv-green-soft) !important;
+        color: var(--tv-text) !important;
     }
 
-    /* ---------- Buttons ---------- */
+    /* Buttons */
     .stButton > button,
     .stDownloadButton > button,
     .stFormSubmitButton > button,
     button[kind="primary"],
     button[kind="secondary"] {
-        background: linear-gradient(90deg, #0f6b3b 0%, #166534 100%) !important;
+        background: linear-gradient(90deg, var(--tv-green-2) 0%, var(--tv-green) 100%) !important;
         color: #ffffff !important;
         border: none !important;
         border-radius: 16px !important;
-        min-height: 3.6rem !important;
+        min-height: 3.4rem !important;
         font-weight: 700 !important;
         box-shadow: 0 8px 20px rgba(22, 101, 52, 0.18) !important;
     }
@@ -211,7 +243,6 @@ st.markdown(
     button[kind="secondary"]:hover {
         background: linear-gradient(90deg, #166534 0%, #15803d 100%) !important;
         color: #ffffff !important;
-        transform: translateY(-1px);
     }
 
     .stButton > button *,
@@ -222,7 +253,7 @@ st.markdown(
         color: #ffffff !important;
     }
 
-    /* ---------- Labels ---------- */
+    /* Labels */
     .stRadio label,
     .stCheckbox label,
     .stSelectbox label,
@@ -231,20 +262,36 @@ st.markdown(
     .stTextArea label,
     .stNumberInput label,
     .stSlider label {
-        color: #0f172a !important;
+        color: var(--tv-text) !important;
         font-weight: 700 !important;
     }
 
-    /* ---------- Metrics ---------- */
+    /* Metrics */
     [data-testid="stMetric"] {
-        background: #ffffff !important;
-        border: 1px solid #dce5df !important;
+        background: var(--tv-surface) !important;
+        border: 1px solid var(--tv-border) !important;
         border-radius: 22px !important;
         padding: 1rem 1.2rem !important;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06) !important;
+        box-shadow: var(--tv-shadow) !important;
     }
 
-    /* ---------- Helper cards ---------- */
+    [data-testid="stMetricLabel"],
+    [data-testid="stMetricLabel"] *,
+    [data-testid="stMetricValue"],
+    [data-testid="stMetricValue"] * {
+        color: var(--tv-text) !important;
+        fill: var(--tv-text) !important;
+    }
+
+    /* Dataframe shell */
+    [data-testid="stDataFrame"] {
+        background: var(--tv-surface) !important;
+        border: 1px solid var(--tv-border) !important;
+        border-radius: 18px !important;
+        overflow: hidden !important;
+    }
+
+    /* Helper card */
     .tv-helper-card {
         background: linear-gradient(180deg, rgba(15,23,42,0.96) 0%, rgba(2,6,23,0.98) 100%) !important;
         border: 1px solid rgba(51, 65, 85, 0.95) !important;
@@ -349,7 +396,6 @@ AD_PACK_DETAILS = {
     },
 }
 
-
 def recommend_frontend_pack(search_mode: str, keyword: str) -> str:
     text = f"{search_mode} {keyword}".lower()
     if "relocation interest finder" in text:
@@ -365,7 +411,6 @@ def recommend_frontend_pack(search_mode: str, keyword: str) -> str:
     if "public intent" in text:
         return "Google Ads"
     return "SEO"
-
 
 def render_ad_pack_helper(selected_pack: str):
     info = AD_PACK_DETAILS[selected_pack]
@@ -385,7 +430,6 @@ def render_ad_pack_helper(selected_pack: str):
         unsafe_allow_html=True,
     )
 
-
 if not st.user.is_logged_in:
     st.markdown("""
     <div class="tv-hero">
@@ -399,18 +443,17 @@ if not st.user.is_logged_in:
 
 user_email = str(st.user.get("email", "")).strip().lower()
 user_name = str(st.user.get("name", "")).strip()
+
 if not user_email.endswith("@midwesthorizons.com"):
     st.error("This app is restricted to Midwest Horizons Google accounts.")
     st.button("Log out", on_click=st.logout, use_container_width=True)
     st.stop()
-
 
 def _fallback_normalize_zip_list(text: str) -> List[str]:
     if not text:
         return []
     parts = [p.strip() for p in text.replace("\n", ",").split(",")]
     return [p for p in parts if p]
-
 
 normalize_zip_list = getattr(packager_mod, "normalize_zip_list", _fallback_normalize_zip_list)
 build_client_export_df = getattr(packager_mod, "build_client_export_df", None)
@@ -419,7 +462,6 @@ build_package_manifest = getattr(packager_mod, "build_package_manifest", None)
 build_package_summary = getattr(packager_mod, "build_package_summary", None)
 build_package_zip_bytes = getattr(exports_mod, "build_package_zip_bytes", None)
 dataframe_to_excel_bytes = getattr(exports_mod, "dataframe_to_excel_bytes", None)
-
 
 def render_hero():
     st.markdown(
@@ -436,11 +478,9 @@ def render_hero():
     with top_b:
         st.button("Log out", on_click=st.logout, use_container_width=True)
 
-
 def render_section_header(title: str, subtitle: str = ""):
     subtitle_html = f'<div class="tv-card-sub">{subtitle}</div>' if subtitle else ""
     st.markdown(f'<div class="tv-card"><h2>{title}</h2>{subtitle_html}</div>', unsafe_allow_html=True)
-
 
 def default_prompt(search_mode: str):
     defaults = {
@@ -452,7 +492,6 @@ def default_prompt(search_mode: str):
     }
     return defaults.get(search_mode, ("KEYWORD", "roofing"))
 
-
 def suggestion_title(search_mode: str) -> str:
     titles = {
         "Public Intent Search": "Suggested public intent phrases",
@@ -460,7 +499,6 @@ def suggestion_title(search_mode: str) -> str:
         "Community Interest Finder": "Suggested community phrases",
     }
     return titles.get(search_mode, "Suggested search phrases")
-
 
 def dedupe_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
@@ -477,7 +515,6 @@ def dedupe_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     work = work.drop(columns=["_dedupe_name", "_dedupe_address", "_dedupe_website", "_dedupe_phone"], errors="ignore")
     return work.reset_index(drop=True)
 
-
 def sort_by_score_if_present(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty or "needs_leads_score" not in df.columns:
         return df.reset_index(drop=True)
@@ -487,19 +524,16 @@ def sort_by_score_if_present(df: pd.DataFrame) -> pd.DataFrame:
     work = work.drop(columns=["_needs_num"], errors="ignore")
     return work.reset_index(drop=True)
 
-
 def safe_metric_count(df: pd.DataFrame, column: str) -> int:
     if column not in df.columns:
         return 0
     s = df[column].astype(str).fillna("").str.strip()
     return int((s != "").sum())
 
-
 def hot_lead_count(df: pd.DataFrame) -> int:
     if "needs_leads_tier" not in df.columns:
         return 0
     return int((df["needs_leads_tier"].astype(str) == "Hot").sum())
-
 
 def is_public_audience_df(df: pd.DataFrame) -> bool:
     if df.empty:
@@ -511,12 +545,10 @@ def is_public_audience_df(df: pd.DataFrame) -> bool:
         return any(mode in PUBLIC_SEARCH_MODES for mode in modes)
     return False
 
-
 def add_display_columns(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return df
     work = df.copy()
-
     possible_contact_cols = ["best_contact_name", "contact_name", "primary_contact_name", "owner_name", "decision_maker"]
     if "best_contact_name" not in work.columns:
         work["best_contact_name"] = ""
@@ -575,7 +607,6 @@ def add_display_columns(df: pd.DataFrame) -> pd.DataFrame:
     work = work.drop(columns=["_score_num", "_keyword", "_search_mode", "_business_type", "_website"], errors="ignore")
     return work
 
-
 def build_summary_text(df: pd.DataFrame, package_name: str, prepared_by: str, search_mode: str, keyword: str, area_label: str) -> str:
     if callable(build_package_summary):
         try:
@@ -593,7 +624,6 @@ def build_summary_text(df: pd.DataFrame, package_name: str, prepared_by: str, se
     ]
     return "\n".join(lines)
 
-
 def fallback_client_export_df(df: pd.DataFrame) -> pd.DataFrame:
     df = add_display_columns(df)
     if is_public_audience_df(df):
@@ -606,7 +636,6 @@ def fallback_client_export_df(df: pd.DataFrame) -> pd.DataFrame:
     cols = [c for c in preferred if c in df.columns]
     remainder = [c for c in df.columns if c not in cols]
     return df[cols + remainder].copy()
-
 
 def fallback_crm_export_df(df: pd.DataFrame) -> pd.DataFrame:
     out = pd.DataFrame()
@@ -634,7 +663,6 @@ def fallback_crm_export_df(df: pd.DataFrame) -> pd.DataFrame:
     out["follow_up_date"] = ""
     return out
 
-
 def get_client_export_df(df: pd.DataFrame) -> pd.DataFrame:
     if callable(build_client_export_df):
         try:
@@ -642,7 +670,6 @@ def get_client_export_df(df: pd.DataFrame) -> pd.DataFrame:
         except Exception:
             pass
     return fallback_client_export_df(df)
-
 
 def get_crm_export_df(df: pd.DataFrame) -> pd.DataFrame:
     if callable(build_crm_export_df):
@@ -652,14 +679,12 @@ def get_crm_export_df(df: pd.DataFrame) -> pd.DataFrame:
             pass
     return fallback_crm_export_df(df)
 
-
 def dataframe_to_excel_fallback(df: pd.DataFrame) -> bytes:
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Leads")
     output.seek(0)
     return output.read()
-
 
 def get_excel_bytes(df: pd.DataFrame) -> bytes:
     if callable(dataframe_to_excel_bytes):
@@ -669,7 +694,6 @@ def get_excel_bytes(df: pd.DataFrame) -> bytes:
             pass
     return dataframe_to_excel_fallback(df)
 
-
 def build_manifest(package_name: str, prepared_by: str, row_count: int, meta: dict) -> dict:
     if callable(build_package_manifest):
         try:
@@ -677,7 +701,6 @@ def build_manifest(package_name: str, prepared_by: str, row_count: int, meta: di
         except Exception:
             pass
     return {"package_name": package_name, "prepared_by": prepared_by, "generated_at": datetime.now().isoformat(), "total_rows": int(row_count), "search_mode": meta.get("search_mode", ""), "keyword": meta.get("keyword", ""), "area_label": meta.get("area_label", ""), "run_by": user_email}
-
 
 def build_package_zip_fallback(client_df: pd.DataFrame, crm_df: pd.DataFrame, summary_text: str, manifest: dict) -> bytes:
     import zipfile
@@ -690,7 +713,6 @@ def build_package_zip_fallback(client_df: pd.DataFrame, crm_df: pd.DataFrame, su
     buf.seek(0)
     return buf.read()
 
-
 def get_package_zip_bytes(client_df: pd.DataFrame, crm_df: pd.DataFrame, summary_text: str, manifest: dict) -> bytes:
     if callable(build_package_zip_bytes):
         try:
@@ -698,7 +720,6 @@ def get_package_zip_bytes(client_df: pd.DataFrame, crm_df: pd.DataFrame, summary
         except Exception:
             pass
     return build_package_zip_fallback(client_df, crm_df, summary_text, manifest)
-
 
 def render_results_card(df: pd.DataFrame, title: str = "Lead Results"):
     df = add_display_columns(df)
@@ -728,7 +749,6 @@ def render_results_card(df: pd.DataFrame, title: str = "Lead Results"):
     visible_cols = [c for c in preferred_cols if c in df.columns]
     remaining_cols = [c for c in df.columns if c not in visible_cols]
     st.dataframe(df[visible_cols + remaining_cols], use_container_width=True, hide_index=True, height=520)
-
 
 render_hero()
 tab1, tab2, tab3 = st.tabs(["Campaign Search", "Client Package Builder", "Expansion Planner"])
