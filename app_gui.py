@@ -39,136 +39,157 @@ inject_brand_theme()
 # ---------------------------------------------------------
 # FIX DROPDOWNS / INPUTS / BUTTONS
 # ---------------------------------------------------------
+
 st.markdown(
     """
     <style>
     /* ==============================
-       SELECT / DROPDOWN FIX
+       LIGHT PREMIUM APP THEME
        ============================== */
 
-    /* Closed select box */
-    div[data-baseweb="select"] > div {
-        background-color: #0f172a !important;
-        color: #ffffff !important;
-        border: 1px solid #334155 !important;
-        border-radius: 10px !important;
+    .stApp {
+        background:
+            radial-gradient(circle at top left, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0) 28%),
+            linear-gradient(180deg, #f8fafc 0%, #eef7f2 100%) !important;
+        color: #0f172a !important;
     }
 
-    div[data-baseweb="select"] div {
-        color: #ffffff !important;
+    .block-container {
+        padding-top: 1.5rem !important;
+        padding-bottom: 2rem !important;
     }
 
-    div[data-baseweb="select"] input {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
+    /* General text */
+    h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, .stCaption {
+        color: #0f172a;
     }
 
-    div[data-baseweb="select"] span {
-        color: #ffffff !important;
+    /* Card-like wrappers from your theme */
+    .tv-card,
+    .tv-hero {
+        background: rgba(255, 255, 255, 0.88) !important;
+        border: 1px solid rgba(15, 23, 42, 0.08) !important;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08) !important;
+        backdrop-filter: blur(8px);
     }
 
-    /* The popup container Streamlit/BaseWeb uses */
-    div[data-baseweb="popover"] {
-        background-color: #0f172a !important;
-        color: #ffffff !important;
+    .tv-pill {
+        background: rgba(16, 185, 129, 0.12) !important;
+        color: #065f46 !important;
+        border: 1px solid rgba(16, 185, 129, 0.20) !important;
     }
 
-    div[data-baseweb="popover"] * {
-        color: #ffffff !important;
+    .tv-hero h1,
+    .tv-card h2,
+    .tv-card-sub,
+    .tv-hero p {
+        color: #0f172a !important;
     }
 
-    /* Menu surface */
-    div[data-baseweb="menu"] {
-        background-color: #0f172a !important;
-        border: 1px solid #334155 !important;
-        border-radius: 10px !important;
-        color: #ffffff !important;
+    .tv-hero .accent {
+        color: #047857 !important;
     }
 
-    div[data-baseweb="menu"] * {
-        color: #ffffff !important;
-    }
-
-    /* Listbox + options */
-    ul[role="listbox"] {
-        background-color: #0f172a !important;
-        border: 1px solid #334155 !important;
-        border-radius: 10px !important;
-        color: #ffffff !important;
-        padding: 4px !important;
-    }
-
-    ul[role="listbox"] * {
-        color: #ffffff !important;
-    }
-
-    li[role="option"] {
-        background-color: #0f172a !important;
-        color: #ffffff !important;
-    }
-
-    li[role="option"] * {
-        color: #ffffff !important;
-    }
-
-    /* Highlighted / hovered / selected row */
-    li[role="option"]:hover,
-    li[role="option"][aria-selected="true"],
-    li[aria-selected="true"] {
-        background-color: #14532d !important;
-        color: #ffffff !important;
-    }
-
-    li[role="option"]:hover *,
-    li[role="option"][aria-selected="true"] *,
-    li[aria-selected="true"] * {
-        color: #ffffff !important;
-    }
-
-    /* Extra fallback for Streamlit-generated menu containers */
-    div[role="listbox"] {
-        background-color: #0f172a !important;
-        color: #ffffff !important;
-    }
-
-    div[role="option"] {
-        background-color: #0f172a !important;
-        color: #ffffff !important;
-    }
-
-    div[role="option"]:hover {
-        background-color: #14532d !important;
-        color: #ffffff !important;
-    }
-
-    /* ===== INPUTS ===== */
+    /* Inputs */
     .stTextInput input,
     .stTextArea textarea,
-    .stNumberInput input {
-        background: #0f172a !important;
-        color: #ffffff !important;
-        border: 1px solid #334155 !important;
-        border-radius: 10px !important;
+    .stNumberInput input,
+    div[data-baseweb="input"] input,
+    div[data-baseweb="base-input"] input {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 12px !important;
+        box-shadow: none !important;
     }
 
     .stTextInput input::placeholder,
     .stTextArea textarea::placeholder,
     .stNumberInput input::placeholder {
-        color: #cbd5e1 !important;
+        color: #64748b !important;
         opacity: 1 !important;
     }
 
-    /* ===== BUTTONS ===== */
+    /* Number input stepper area */
+    .stNumberInput div[data-baseweb="input"] > div:last-child,
+    .stNumberInput button {
+        background: #f8fafc !important;
+        color: #0f172a !important;
+    }
+
+    /* Selectbox closed state */
+    div[data-baseweb="select"] > div {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 12px !important;
+        min-height: 48px !important;
+        box-shadow: none !important;
+    }
+
+    div[data-baseweb="select"] * {
+        color: #0f172a !important;
+    }
+
+    div[data-baseweb="select"] svg {
+        fill: #334155 !important;
+    }
+
+    /* Popover / dropdown surface */
+    div[data-baseweb="popover"],
+    div[data-baseweb="menu"],
+    ul[role="listbox"],
+    div[role="listbox"] {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12) !important;
+    }
+
+    div[data-baseweb="popover"] *,
+    div[data-baseweb="menu"] *,
+    ul[role="listbox"] *,
+    div[role="listbox"] * {
+        color: #0f172a !important;
+    }
+
+    li[role="option"],
+    div[role="option"] {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border-radius: 8px !important;
+    }
+
+    li[role="option"]:hover,
+    div[role="option"]:hover,
+    li[role="option"][aria-selected="true"],
+    div[role="option"][aria-selected="true"],
+    li[aria-selected="true"] {
+        background: #ecfdf5 !important;
+        color: #065f46 !important;
+    }
+
+    li[role="option"]:hover *,
+    div[role="option"]:hover *,
+    li[role="option"][aria-selected="true"] *,
+    div[role="option"][aria-selected="true"] *,
+    li[aria-selected="true"] * {
+        color: #065f46 !important;
+    }
+
+    /* Buttons */
     .stButton > button,
     .stDownloadButton > button,
     .stFormSubmitButton > button,
     button[kind="primary"],
     button[kind="secondary"] {
-        background: #14532d !important;
+        background: linear-gradient(180deg, #0f766e 0%, #065f46 100%) !important;
         color: #ffffff !important;
-        border: 1px solid #166534 !important;
-        border-radius: 10px !important;
+        border: 1px solid #065f46 !important;
+        border-radius: 12px !important;
         font-weight: 700 !important;
+        box-shadow: 0 8px 20px rgba(6, 95, 70, 0.22) !important;
     }
 
     .stButton > button:hover,
@@ -176,9 +197,9 @@ st.markdown(
     .stFormSubmitButton > button:hover,
     button[kind="primary"]:hover,
     button[kind="secondary"]:hover {
-        background: #166534 !important;
+        background: linear-gradient(180deg, #0d9488 0%, #047857 100%) !important;
+        border: 1px solid #047857 !important;
         color: #ffffff !important;
-        border: 1px solid #22c55e !important;
     }
 
     .stButton > button *,
@@ -189,32 +210,66 @@ st.markdown(
         color: #ffffff !important;
     }
 
-    /* ===== HELPER CARDS ===== */
+    /* Checkbox / radio labels */
+    .stCheckbox label,
+    .stRadio label {
+        color: #0f172a !important;
+    }
+
+    /* Dataframe / table container */
+    [data-testid="stDataFrame"],
+    div[data-testid="stTable"] {
+        background: #ffffff !important;
+        border: 1px solid rgba(15, 23, 42, 0.08) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06) !important;
+        overflow: hidden !important;
+    }
+
+    /* Metrics */
+    div[data-testid="metric-container"] {
+        background: #ffffff !important;
+        border: 1px solid rgba(15, 23, 42, 0.08) !important;
+        border-radius: 16px !important;
+        padding: 14px 16px !important;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05) !important;
+    }
+
+    /* Expander */
+    details {
+        background: rgba(255,255,255,0.82) !important;
+        border: 1px solid rgba(15, 23, 42, 0.08) !important;
+        border-radius: 14px !important;
+        padding: 0.3rem 0.8rem !important;
+    }
+
+    /* Helper cards */
     .tv-helper-card {
-        background: linear-gradient(180deg, rgba(15,23,42,0.96) 0%, rgba(2,6,23,0.98) 100%);
-        border: 1px solid rgba(51, 65, 85, 0.95);
+        background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+        border: 1px solid rgba(16, 185, 129, 0.22);
         border-radius: 16px;
         padding: 16px 18px;
         margin-top: 12px;
         margin-bottom: 12px;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
     }
 
     .tv-helper-title {
         font-size: 1.05rem;
         font-weight: 700;
         margin-bottom: 8px;
-        color: #ffffff;
+        color: #064e3b;
     }
 
     .tv-helper-label {
-        color: #86efac;
+        color: #047857;
         font-weight: 700;
         margin-top: 8px;
         margin-bottom: 2px;
     }
 
     .tv-helper-copy {
-        color: #e5e7eb;
+        color: #334155;
         line-height: 1.5;
     }
 
@@ -222,9 +277,9 @@ st.markdown(
         display: inline-block;
         padding: 4px 10px;
         border-radius: 999px;
-        background: rgba(20, 83, 45, 0.25);
-        border: 1px solid rgba(34, 197, 94, 0.45);
-        color: #dcfce7;
+        background: rgba(16, 185, 129, 0.12);
+        border: 1px solid rgba(16, 185, 129, 0.20);
+        color: #065f46;
         font-size: 0.82rem;
         font-weight: 700;
         margin-bottom: 10px;
@@ -233,6 +288,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
 
 if "results_df" not in st.session_state:
     st.session_state.results_df = pd.DataFrame()
