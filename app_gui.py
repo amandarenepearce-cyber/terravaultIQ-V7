@@ -1,3 +1,4 @@
+
 import io
 import json
 import os
@@ -37,145 +38,279 @@ st.set_page_config(
 inject_brand_theme()
 
 # ---------------------------------------------------------
-# FIX DROPDOWNS / INPUTS / BUTTONS
+# LIGHT UI OVERRIDE
 # ---------------------------------------------------------
-
 st.markdown(
     """
     <style>
-    /* ==============================
-       LIGHT PREMIUM APP THEME
-       ============================== */
+    :root {
+        --tv-bg: #eef4f2;
+        --tv-surface: #ffffff;
+        --tv-surface-2: #f8fbfa;
+        --tv-text: #0f172a;
+        --tv-text-soft: #334155;
+        --tv-border: #d7e3df;
+        --tv-green: #0f5132;
+        --tv-green-2: #166534;
+        --tv-green-3: #dcfce7;
+        --tv-accent: #ff5a5f;
+        --tv-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    }
 
-    .stApp {
+    html, body, [data-testid="stAppViewContainer"], .stApp {
         background:
-            radial-gradient(circle at top left, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0) 28%),
-            linear-gradient(180deg, #f8fafc 0%, #eef7f2 100%) !important;
-        color: #0f172a !important;
+            radial-gradient(circle at top left, rgba(22,101,52,0.08), transparent 28%),
+            linear-gradient(180deg, #f7fbfa 0%, #eef4f2 100%) !important;
+        color: var(--tv-text) !important;
+    }
+
+    [data-testid="stHeader"] {
+        background: rgba(255,255,255,0) !important;
+    }
+
+    [data-testid="stToolbar"] {
+        right: 1rem;
     }
 
     .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 2rem !important;
+        padding-top: 1.35rem !important;
+        padding-bottom: 2.25rem !important;
     }
 
-    /* General text */
-    h1, h2, h3, h4, h5, h6, p, label, .stMarkdown, .stCaption {
-        color: #0f172a;
+    /* Generic text */
+    h1, h2, h3, h4, h5, h6, p, span, div, label {
+        color: var(--tv-text);
     }
 
-    /* Card-like wrappers from your theme */
+    .stMarkdown, .stCaption, .stText {
+        color: var(--tv-text) !important;
+    }
+
+    /* Section cards */
     .tv-card,
+    .tv-hero,
+    div[data-testid="stVerticalBlock"] > div:has(> div .tv-card),
+    div[data-testid="stVerticalBlock"] > div:has(> div .tv-hero) {
+        background: rgba(255,255,255,0.86);
+        border: 1px solid rgba(215,227,223,0.95);
+        box-shadow: var(--tv-shadow);
+        border-radius: 28px;
+        backdrop-filter: blur(10px);
+    }
+
+    .tv-card {
+        padding: 1.5rem 1.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .tv-card h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        letter-spacing: 0.01em;
+        color: var(--tv-text) !important;
+    }
+
+    .tv-card-sub {
+        margin-top: 0.55rem;
+        color: var(--tv-text-soft) !important;
+        font-size: 0.96rem;
+    }
+
     .tv-hero {
-        background: rgba(255, 255, 255, 0.88) !important;
-        border: 1px solid rgba(15, 23, 42, 0.08) !important;
-        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08) !important;
-        backdrop-filter: blur(8px);
+        padding: 1.5rem 1.75rem;
+        margin-bottom: 1rem;
+        background:
+            linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(247,251,250,0.96) 55%, rgba(220,252,231,0.84) 100%);
     }
 
-    .tv-pill {
-        background: rgba(16, 185, 129, 0.12) !important;
-        color: #065f46 !important;
-        border: 1px solid rgba(16, 185, 129, 0.20) !important;
+    .tv-hero h1 {
+        margin: 0.45rem 0 0.7rem 0;
+        line-height: 1.02;
+        font-size: 2.7rem;
+        color: var(--tv-text) !important;
     }
 
-    .tv-hero h1,
-    .tv-card h2,
-    .tv-card-sub,
     .tv-hero p {
-        color: #0f172a !important;
+        margin: 0;
+        color: var(--tv-text-soft) !important;
+        font-size: 1rem;
+        max-width: 760px;
     }
 
-    .tv-hero .accent {
-        color: #047857 !important;
+    .tv-pill,
+    .tv-kicker {
+        display: inline-block;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(15,81,50,0.08);
+        border: 1px solid rgba(15,81,50,0.18);
+        color: var(--tv-green) !important;
+        font-weight: 700;
+        font-size: 0.82rem;
+    }
+
+    .accent {
+        color: var(--tv-green) !important;
+    }
+
+    /* Labels and helper copy */
+    .stTextInput label,
+    .stTextArea label,
+    .stNumberInput label,
+    .stSelectbox label,
+    .stMultiSelect label,
+    .stCheckbox label,
+    .stRadio label,
+    .stSlider label,
+    .stDownloadButton label,
+    [data-testid="stWidgetLabel"],
+    [data-testid="stWidgetLabel"] * {
+        color: var(--tv-text) !important;
+        font-weight: 700 !important;
+    }
+
+    .stCaption, .stInfo, .stAlert {
+        color: var(--tv-text) !important;
+    }
+
+    /* Tabs */
+    [data-baseweb="tab-list"] {
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    button[data-baseweb="tab"] {
+        background: rgba(255,255,255,0.7) !important;
+        border: 1px solid var(--tv-border) !important;
+        border-radius: 999px !important;
+        color: var(--tv-text) !important;
+        font-weight: 700 !important;
+        padding: 0.45rem 1rem !important;
+    }
+
+    button[data-baseweb="tab"][aria-selected="true"] {
+        background: linear-gradient(135deg, var(--tv-green) 0%, var(--tv-green-2) 100%) !important;
+        color: #ffffff !important;
+        border-color: var(--tv-green) !important;
     }
 
     /* Inputs */
     .stTextInput input,
     .stTextArea textarea,
     .stNumberInput input,
-    div[data-baseweb="input"] input,
-    div[data-baseweb="base-input"] input {
-        background: #ffffff !important;
-        color: #0f172a !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 12px !important;
-        box-shadow: none !important;
+    [data-testid="stNumberInput"] input {
+        background: var(--tv-surface) !important;
+        color: var(--tv-text) !important;
+        border: 1px solid var(--tv-border) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 2px 0 rgba(15, 23, 42, 0.02);
     }
 
     .stTextInput input::placeholder,
     .stTextArea textarea::placeholder,
     .stNumberInput input::placeholder {
-        color: #64748b !important;
+        color: #94a3b8 !important;
         opacity: 1 !important;
     }
 
-    /* Number input stepper area */
-    .stNumberInput div[data-baseweb="input"] > div:last-child,
-    .stNumberInput button {
-        background: #f8fafc !important;
-        color: #0f172a !important;
+    .stTextInput input:focus,
+    .stTextArea textarea:focus,
+    .stNumberInput input:focus {
+        border-color: rgba(15,81,50,0.45) !important;
+        box-shadow: 0 0 0 3px rgba(34,197,94,0.10) !important;
     }
 
-    /* Selectbox closed state */
+    /* Number input stepper */
+    [data-testid="stNumberInput"] button {
+        background: #f8fafc !important;
+        color: var(--tv-text) !important;
+        border: 1px solid var(--tv-border) !important;
+    }
+
+    /* Selects - closed state */
     div[data-baseweb="select"] > div {
-        background-color: #ffffff !important;
-        color: #0f172a !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 12px !important;
-        min-height: 48px !important;
-        box-shadow: none !important;
+        min-height: 3.25rem !important;
+        background: var(--tv-surface) !important;
+        color: var(--tv-text) !important;
+        border: 1px solid var(--tv-border) !important;
+        border-radius: 18px !important;
+        box-shadow: 0 2px 0 rgba(15, 23, 42, 0.02);
     }
 
     div[data-baseweb="select"] * {
-        color: #0f172a !important;
+        color: var(--tv-text) !important;
+        fill: var(--tv-text) !important;
     }
 
     div[data-baseweb="select"] svg {
-        fill: #334155 !important;
+        color: var(--tv-text) !important;
+        fill: var(--tv-text) !important;
     }
 
-    /* Popover / dropdown surface */
-    div[data-baseweb="popover"],
-    div[data-baseweb="menu"],
+    /* Dropdown menu */
+    div[data-baseweb="popover"] {
+        background: transparent !important;
+    }
+
+    div[data-baseweb="menu"] {
+        background: var(--tv-surface) !important;
+        border: 1px solid var(--tv-border) !important;
+        border-radius: 18px !important;
+        box-shadow: 0 18px 40px rgba(15,23,42,0.12) !important;
+        overflow: hidden !important;
+    }
+
     ul[role="listbox"],
     div[role="listbox"] {
-        background: #ffffff !important;
-        color: #0f172a !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 12px !important;
-        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12) !important;
-    }
-
-    div[data-baseweb="popover"] *,
-    div[data-baseweb="menu"] *,
-    ul[role="listbox"] *,
-    div[role="listbox"] * {
-        color: #0f172a !important;
+        background: var(--tv-surface) !important;
+        color: var(--tv-text) !important;
+        padding: 0.35rem !important;
     }
 
     li[role="option"],
     div[role="option"] {
-        background: #ffffff !important;
-        color: #0f172a !important;
-        border-radius: 8px !important;
+        background: var(--tv-surface) !important;
+        color: var(--tv-text) !important;
+        border-radius: 12px !important;
+    }
+
+    li[role="option"] *,
+    div[role="option"] * {
+        color: var(--tv-text) !important;
     }
 
     li[role="option"]:hover,
     div[role="option"]:hover,
     li[role="option"][aria-selected="true"],
-    div[role="option"][aria-selected="true"],
-    li[aria-selected="true"] {
-        background: #ecfdf5 !important;
-        color: #065f46 !important;
+    div[role="option"][aria-selected="true"] {
+        background: #ecfdf3 !important;
+        color: var(--tv-green) !important;
     }
 
-    li[role="option"]:hover *,
-    div[role="option"]:hover *,
-    li[role="option"][aria-selected="true"] *,
-    div[role="option"][aria-selected="true"] *,
-    li[aria-selected="true"] * {
-        color: #065f46 !important;
+    /* Checkbox / radio text and controls */
+    .stCheckbox,
+    .stRadio,
+    .stCheckbox *,
+    .stRadio * {
+        color: var(--tv-text) !important;
+    }
+
+    .stCheckbox label p,
+    .stRadio label p {
+        color: var(--tv-text) !important;
+        opacity: 1 !important;
+    }
+
+    [role="radiogroup"] label,
+    [role="radiogroup"] div,
+    [role="radiogroup"] p {
+        color: var(--tv-text) !important;
+        opacity: 1 !important;
+    }
+
+    .stCheckbox input + div,
+    .stRadio input + div {
+        border-color: var(--tv-border) !important;
     }
 
     /* Buttons */
@@ -184,12 +319,14 @@ st.markdown(
     .stFormSubmitButton > button,
     button[kind="primary"],
     button[kind="secondary"] {
-        background: linear-gradient(180deg, #0f766e 0%, #065f46 100%) !important;
+        min-height: 3rem;
+        background: linear-gradient(135deg, var(--tv-green) 0%, var(--tv-green-2) 100%) !important;
         color: #ffffff !important;
-        border: 1px solid #065f46 !important;
-        border-radius: 12px !important;
-        font-weight: 700 !important;
-        box-shadow: 0 8px 20px rgba(6, 95, 70, 0.22) !important;
+        border: 1px solid rgba(15,81,50,0.85) !important;
+        border-radius: 16px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.01em;
+        box-shadow: 0 10px 20px rgba(22,101,52,0.18);
     }
 
     .stButton > button:hover,
@@ -197,9 +334,9 @@ st.markdown(
     .stFormSubmitButton > button:hover,
     button[kind="primary"]:hover,
     button[kind="secondary"]:hover {
-        background: linear-gradient(180deg, #0d9488 0%, #047857 100%) !important;
-        border: 1px solid #047857 !important;
-        color: #ffffff !important;
+        transform: translateY(-1px);
+        filter: brightness(1.03);
+        border-color: rgba(21,128,61,1) !important;
     }
 
     .stButton > button *,
@@ -210,85 +347,78 @@ st.markdown(
         color: #ffffff !important;
     }
 
-    /* Checkbox / radio labels */
-    .stCheckbox label,
-    .stRadio label {
-        color: #0f172a !important;
+    /* Metrics and dataframe */
+    [data-testid="metric-container"] {
+        background: rgba(255,255,255,0.88) !important;
+        border: 1px solid var(--tv-border) !important;
+        border-radius: 20px !important;
+        box-shadow: var(--tv-shadow) !important;
+        padding: 0.75rem 1rem !important;
     }
 
-    /* Dataframe / table container */
-    [data-testid="stDataFrame"],
-    div[data-testid="stTable"] {
-        background: #ffffff !important;
-        border: 1px solid rgba(15, 23, 42, 0.08) !important;
-        border-radius: 16px !important;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06) !important;
+    [data-testid="stDataFrame"] {
+        background: rgba(255,255,255,0.92) !important;
+        border: 1px solid var(--tv-border) !important;
+        border-radius: 20px !important;
         overflow: hidden !important;
     }
 
-    /* Metrics */
-    div[data-testid="metric-container"] {
-        background: #ffffff !important;
-        border: 1px solid rgba(15, 23, 42, 0.08) !important;
-        border-radius: 16px !important;
-        padding: 14px 16px !important;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05) !important;
+    /* Expanders, alerts */
+    [data-testid="stExpander"] {
+        background: rgba(255,255,255,0.72) !important;
+        border: 1px solid var(--tv-border) !important;
+        border-radius: 18px !important;
     }
 
-    /* Expander */
-    details {
-        background: rgba(255,255,255,0.82) !important;
-        border: 1px solid rgba(15, 23, 42, 0.08) !important;
-        border-radius: 14px !important;
-        padding: 0.3rem 0.8rem !important;
+    [data-testid="stInfo"],
+    [data-testid="stSuccess"],
+    [data-testid="stWarning"],
+    [data-testid="stError"] {
+        border-radius: 18px !important;
     }
 
-    /* Helper cards */
+    /* Helper card */
     .tv-helper-card {
-        background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
-        border: 1px solid rgba(16, 185, 129, 0.22);
-        border-radius: 16px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%);
+        border: 1px solid var(--tv-border);
+        border-radius: 22px;
         padding: 16px 18px;
         margin-top: 12px;
         margin-bottom: 12px;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        box-shadow: var(--tv-shadow);
     }
 
     .tv-helper-title {
         font-size: 1.05rem;
-        font-weight: 700;
+        font-weight: 800;
         margin-bottom: 8px;
-        color: #064e3b;
+        color: var(--tv-text) !important;
     }
 
     .tv-helper-label {
-        color: #047857;
-        font-weight: 700;
+        color: var(--tv-green) !important;
+        font-weight: 800;
         margin-top: 8px;
         margin-bottom: 2px;
     }
 
     .tv-helper-copy {
-        color: #334155;
+        color: var(--tv-text-soft) !important;
         line-height: 1.5;
     }
 
-    .tv-kicker {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 999px;
-        background: rgba(16, 185, 129, 0.12);
-        border: 1px solid rgba(16, 185, 129, 0.20);
-        color: #065f46;
-        font-size: 0.82rem;
-        font-weight: 700;
-        margin-bottom: 10px;
+    /* Horizontal rule and footer */
+    hr {
+        border-color: rgba(215,227,223,0.9) !important;
+    }
+
+    .stApp a {
+        color: var(--tv-green) !important;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
 
 if "results_df" not in st.session_state:
     st.session_state.results_df = pd.DataFrame()
